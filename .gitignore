@@ -1,0 +1,27 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Dependencies / build output
+node_modules/
+dist/
+.cache/
+
+# Secrets — 이 저장소는 Public이므로 키는 절대 커밋하지 않음
+.env
+.env.*
+*.key
+*.pem
+secrets.*
+
+# Claude Code 개인 설정
+.claude/settings.local.json
+
+# Logs
+*.log
