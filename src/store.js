@@ -4,13 +4,13 @@ import { randomUUID } from 'node:crypto';
 
 const DIR = path.resolve(process.env.DATA_DIR || 'data');
 const FILE = path.join(DIR, 'db.json');
-const empty = () => ({ profile: null, entries: [] });
+const empty = () => ({ profile: null, entries: [], weights: [] });
 
 let queue = Promise.resolve(); // 쓰기 직렬화
 
 async function load() {
   try {
-    return JSON.parse(await readFile(FILE, 'utf8'));
+    return { ...empty(), ...JSON.parse(await readFile(FILE, 'utf8')) }; // 이전 버전 db에 없는 필드 보정
   } catch (e) {
     if (e.code === 'ENOENT') return empty();
     if (e instanceof SyntaxError) {
@@ -57,6 +57,28 @@ export const addEntry = (entry) =>
     db.entries.push(saved);
     return saved;
   });
+
+export const listWeights = async () => (await load()).weights.sort((a, b) => a.date.localeCompare(b.date));
+
+// 날짜별 1건(upsert). 가장 최근 체중은 프로필에도 반영해 권장량이 따라가게 한다.
+export const setWeight = (date, kg) =>
+  mutate((db) => {
+    db.weights = db.weights.filter((w) => w.date !== date).concat({ date, kg });
+    syncProfileWeight(db);
+  });
+
+export const deleteWeight = (date) =>
+  mutate((db) => {
+    const before = db.weights.length;
+    db.weights = db.weights.filter((w) => w.date !== date);
+    syncProfileWeight(db);
+    return db.weights.length < before;
+  });
+
+function syncProfileWeight(db) {
+  const latest = [...db.weights].sort((a, b) => b.date.localeCompare(a.date))[0];
+  if (latest && db.profile) db.profile.weightKg = latest.kg;
+}
 
 export const listAll = async () => (await load()).entries;
 

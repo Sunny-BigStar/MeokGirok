@@ -1,16 +1,19 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTIVITY, GOALS, calcTargets, sumEntries, validateProfile, FIELDS } from './nutrition.js';
+import { ACTIVITY, GOALS, calcTargets, sumEntries, validateProfile, weeklyReport, isDate, FIELDS } from './nutrition.js';
 import * as store from './store.js';
 import { AnalyzeError, analyzeImage } from './analyze.js';
+import { authEnabled, authMiddleware, loginHandler, logoutHandler } from './auth.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const app = express();
 app.use(express.json({ limit: '12mb' }));
+app.use(authMiddleware);
+app.post('/api/login', loginHandler);
+app.post('/api/logout', logoutHandler);
 app.use(express.static(path.join(here, '..', 'public')));
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MEALS = ['breakfast', 'lunch', 'dinner', 'snack'];
 const ALLOWED_IMAGES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const wrap = (fn) => (req, res, next) => fn(req, res).catch(next);
@@ -23,6 +26,7 @@ function shiftDate(date, days) {
 
 app.get('/api/meta', (_req, res) => {
   res.json({
+    authEnabled: authEnabled(),
     activity: Object.fromEntries(Object.entries(ACTIVITY).map(([k, v]) => [k, v.label])),
     goals: Object.fromEntries(Object.entries(GOALS).map(([k, v]) => [k, v.label])),
   });
@@ -61,6 +65,7 @@ function analyzeLimiter(req, res, next) {
     return res.status(429).json({ error: '분석 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
   recent.push(now);
   hits.set(req.ip, recent);
+  if (hits.size > 1000) for (const [ip, ts] of hits) if (now - ts.at(-1) >= WINDOW_MS) hits.delete(ip);
   next();
 }
 
@@ -68,11 +73,12 @@ app.post('/api/analyze', analyzeLimiter, wrap(async (req, res) => {
   const m = /^data:(image\/[a-z+.-]+);base64,(.+)$/s.exec(req.body?.image ?? '');
   if (!m || !ALLOWED_IMAGES.includes(m[1]))
     return res.status(400).json({ error: 'JPEG/PNG/WebP/GIF 이미지만 분석할 수 있습니다.' });
-  res.json(await analyzeImage(m[2], m[1]));
+  const hint = typeof req.body.hint === 'string' ? req.body.hint.trim().slice(0, 200) : '';
+  res.json(await analyzeImage(m[2], m[1], hint));
 }));
 
 function parseEntry(b) {
-  if (!DATE_RE.test(b.date ?? '')) return { error: '날짜 형식이 올바르지 않습니다.' };
+  if (!isDate(b.date ?? '')) return { error: '날짜 형식이 올바르지 않습니다.' };
   if (!String(b.name ?? '').trim()) return { error: '음식 이름을 입력해 주세요.' };
   const entry = {
     date: b.date,
@@ -117,6 +123,26 @@ app.get('/api/export.csv', wrap(async (_req, res) => {
   res.send('﻿' + csv);
 }));
 
+// 체중 기록 (프로필 몸무게와 연동)
+app.get('/api/weights', wrap(async (_req, res) => {
+  res.json({ weights: await store.listWeights() });
+}));
+
+app.put('/api/weights', wrap(async (req, res) => {
+  const kg = Number(req.body?.weightKg);
+  const date = req.body?.date;
+  if (!isDate(date ?? '')) return res.status(400).json({ error: '날짜 형식이 올바르지 않습니다.' });
+  if (!(kg >= 30 && kg <= 300)) return res.status(400).json({ error: '몸무게는 30~300kg 사이여야 합니다.' });
+  await store.setWeight(date, Math.round(kg * 10) / 10);
+  const profile = await store.getProfile();
+  res.json({ weights: await store.listWeights(), targets: profile ? calcTargets(profile) : null });
+}));
+
+app.delete('/api/weights/:date', wrap(async (req, res) => {
+  const ok = isDate(req.params.date) && (await store.deleteWeight(req.params.date));
+  res.status(ok ? 204 : 404).end();
+}));
+
 app.delete('/api/entries/:id', wrap(async (req, res) => {
   const ok = await store.deleteEntry(req.params.id);
   res.status(ok ? 204 : 404).end();
@@ -124,7 +150,7 @@ app.delete('/api/entries/:id', wrap(async (req, res) => {
 
 // 자주 먹는 음식: 최근 30일 기록을 이름별로 묶어 빈도 > 최근순으로 최대 8개
 app.get('/api/recent', wrap(async (req, res) => {
-  const date = DATE_RE.test(req.query.date ?? '') ? req.query.date : new Date().toISOString().slice(0, 10);
+  const date = isDate(req.query.date ?? '') ? req.query.date : new Date().toISOString().slice(0, 10);
   const entries = await store.listRange(shiftDate(date, -30), shiftDate(date, 1));
   const byName = new Map();
   for (const e of entries) {
@@ -148,7 +174,7 @@ app.get('/api/recent', wrap(async (req, res) => {
 // 하루 요약: 섭취량, 권장량, 달성률, 최근 7일 칼로리
 app.get('/api/summary', wrap(async (req, res) => {
   const date = req.query.date;
-  if (!DATE_RE.test(date ?? '')) return res.status(400).json({ error: 'date=YYYY-MM-DD 가 필요합니다.' });
+  if (!isDate(date ?? '')) return res.status(400).json({ error: 'date=YYYY-MM-DD 가 필요합니다.' });
   const profile = await store.getProfile();
   const targets = profile ? calcTargets(profile) : null;
   const entries = await store.listEntries(date);
@@ -159,11 +185,12 @@ app.get('/api/summary', wrap(async (req, res) => {
 
   const from = shiftDate(date, -6);
   const range = await store.listRange(from, date);
-  const week = Array.from({ length: 7 }, (_, i) => {
+  const days = Array.from({ length: 7 }, (_, i) => {
     const d = shiftDate(from, i);
-    return { date: d, calories: sumEntries(range.filter((e) => e.date === d)).calories };
+    return { date: d, totals: sumEntries(range.filter((e) => e.date === d)) };
   });
-  res.json({ date, profile, targets, totals, percent, entries, week });
+  const week = days.map((d) => ({ date: d.date, calories: d.totals.calories }));
+  res.json({ date, profile, targets, totals, percent, entries, week, report: weeklyReport(days, targets) });
 }));
 
 app.use((err, _req, res, _next) => {

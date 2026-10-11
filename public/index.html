@@ -16,11 +16,13 @@
       <button id="prev" aria-label="전날">‹</button>
       <input type="date" id="date">
       <button id="next" aria-label="다음날">›</button>
+      <button id="today" class="ghost">오늘</button>
     </div>
     <button id="profileBtn" class="ghost">내 정보</button>
   </header>
 
   <main>
+    <div id="banner" class="err card" hidden></div>
     <section id="setup" class="card" hidden>
       <h2>먼저 내 정보를 입력해 주세요</h2>
       <p class="muted">키·몸무게·활동량으로 하루 권장 섭취량을 계산합니다.</p>
@@ -60,7 +62,25 @@
       <div id="week" class="week"></div>
     </section>
 
-    <p class="muted foot"><a href="/api/export.csv" download>기록 CSV 내보내기</a></p>
+    <section id="reportCard" class="card" hidden>
+      <h2>주간 리포트 <span class="muted">기록한 날 기준 평균</span></h2>
+      <div id="reportStats" class="stats"></div>
+      <div id="ratioBar" class="ratio"></div>
+      <ul id="insights" class="insights"></ul>
+    </section>
+
+    <section id="weightCard" class="card" hidden>
+      <h2>체중 <span class="muted" id="weightSub"></span></h2>
+      <div id="weightChart"></div>
+      <form id="weightForm" class="inline">
+        <input id="weightInput" type="number" step="0.1" min="30" max="300" placeholder="선택한 날짜의 몸무게(kg)" required>
+        <button class="primary">기록</button>
+      </form>
+      <p class="muted">기록하면 권장량이 최신 체중으로 다시 계산돼요.</p>
+    </section>
+
+    <p class="muted foot"><a href="/api/export.csv" download>기록 CSV 내보내기</a>
+      <a href="#" id="logout" hidden>· 로그아웃</a></p>
     <p class="muted foot">권장량은 Mifflin-St Jeor 공식 기반의 일반 추정치이며, AI 분석값은 오차가 있을 수 있습니다. 의학적 조언이 아닙니다.</p>
   </main>
 
@@ -70,6 +90,10 @@
       <h2 id="entryTitle">기록 추가</h2>
       <div id="analyzing" class="muted" hidden>분석 중이에요… 잠시만 기다려 주세요.</div>
       <div id="analyzeErr" class="err" hidden></div>
+      <div id="hintBox" class="inline" hidden>
+        <input id="hint" maxlength="200" placeholder="결과가 틀리면 설명해 주세요 (예: 밥은 반 공기)">
+        <button type="button" id="reanalyze" class="ghost">다시 분석</button>
+      </div>
       <img id="preview" alt="" hidden>
       <div id="pick" class="muted" hidden></div>
       <div id="fields" hidden>
@@ -89,6 +113,7 @@
           <label>식이섬유(g) <input name="fiber" type="number" step="any" min="0"></label>
           <label>나트륨(mg) <input name="sodium" type="number" step="any" min="0"></label>
         </div>
+        <p id="warn" class="err" hidden></p>
         <p id="note" class="muted"></p>
       </div>
       <div class="actions">

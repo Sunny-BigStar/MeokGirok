@@ -24,6 +24,7 @@ const fmt = (n) => Math.round(n).toLocaleString('ko-KR');
 
 async function api(url, opts) {
   const res = await fetch(url, opts);
+  if (res.status === 401) return void (location.href = '/login.html');
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `요청 실패 (${res.status})`);
@@ -45,7 +46,9 @@ async function refresh() {
   if (hasProfile) renderSummary(s);
   renderEntries(s.entries);
   renderWeek(s);
+  renderReport(s);
   loadRecent();
+  if (hasProfile) loadWeights();
 }
 
 async function loadRecent() {
@@ -141,6 +144,7 @@ function renderWeek({ week, targets }) {
   );
 }
 
+$('today').onclick = () => ((date = localDate()), refresh());
 $('prev').onclick = () => ((date = shift(date, -1)), refresh());
 $('next').onclick = () => ((date = shift(date, 1)), refresh());
 $('date').onchange = (e) => e.target.value && ((date = e.target.value), refresh());
@@ -150,8 +154,11 @@ function fillSelect(sel, map) {
   sel.replaceChildren(...Object.entries(map).map(([v, l]) => new Option(l, v)));
 }
 
+let prevWeight = null; // 프로필에서 몸무게가 바뀌면 체중 기록에도 남기기 위해 기억
+
 async function openProfile() {
   const { profile } = await api('/api/profile');
+  prevWeight = profile ? profile.weightKg : null;
   const f = $('profileForm').elements;
   if (profile) for (const k of Object.keys(profile)) f[k].value = profile[k];
   $('profileErr').hidden = true;
@@ -166,6 +173,9 @@ $('profileForm').onsubmit = async (ev) => {
     await api('/api/profile', json('PUT', Object.fromEntries(
       ['sex', 'age', 'heightCm', 'weightKg', 'activity', 'goal'].map((k) => [k, f[k].value]),
     )));
+    if (Number(f.weightKg.value) !== prevWeight) {
+      await api('/api/weights', json('PUT', { date: localDate(), weightKg: f.weightKg.value }));
+    }
     $('profileDlg').close();
     refresh();
   } catch (e) {
@@ -178,15 +188,20 @@ $('profileForm').onsubmit = async (ev) => {
 let candidates = []; // 분석된 후보(영양성분은 '1회 기준')
 let current = null;
 let source = 'manual';
+let lastImage = null; // 재분석용(메모리에만 보관)
 let editing = null; // 수정 중인 기록(없으면 새 기록)
 
 function resetEntryDialog() {
   $('entryForm').reset();
+  $('warn').hidden = true;
   $('entryForm').elements.meal.value = mealByHour(new Date().getHours());
   for (const id of ['analyzing', 'analyzeErr', 'preview', 'pick', 'fields', 'entrySave']) $(id).hidden = true;
   candidates = [];
   current = null;
   editing = null;
+  lastImage = null;
+  $('hint').value = '';
+  $('hintBox').hidden = true;
   $('presets').replaceChildren();
 }
 
@@ -210,6 +225,8 @@ function applyCandidate() {
   f.sodium.value = Math.round(current.sodium_mg * m);
   $('servingDesc').textContent = `기준: ${current.serving_description} (정확도 ${Math.round(current.confidence * 100)}%)`;
   renderPresets(m);
+  $('warn').textContent = current.warning ?? '';
+  $('warn').hidden = !current.warning;
 }
 
 // 섭취량 빠른 선택. 라벨에 총 제공 횟수가 있으면 '한 통 전체' 추가
@@ -298,26 +315,47 @@ $('photo').onchange = async (ev) => {
   $('analyzing').hidden = false;
   $('entryDlg').showModal();
   try {
-    const dataUrl = await shrink(file);
-    $('preview').src = dataUrl;
+    lastImage = await shrink(file);
+    $('preview').src = lastImage;
     $('preview').hidden = false;
-    const r = await api('/api/analyze', json('POST', { image: dataUrl }));
-    $('analyzing').hidden = true;
-    if (!r.items.length) throw new Error(r.note || '음식이나 영양성분표를 찾지 못했어요. 다시 찍어 주세요.');
-    source = r.kind === 'label' ? 'label' : 'food';
-    candidates = r.items;
-    current = candidates[0];
-    // 라벨에 총 제공 횟수가 있어도 기본값은 1회분. 사용자가 배수로 조절.
-    $('note').textContent = r.note;
-    renderPick();
-    applyCandidate();
-    showFields();
+    await runAnalysis('');
   } catch (e) {
-    $('analyzing').hidden = true;
-    $('analyzeErr').textContent = e.message;
-    $('analyzeErr').hidden = false;
+    showAnalyzeError(e);
   }
 };
+
+function showAnalyzeError(e) {
+  $('analyzing').hidden = true;
+  $('analyzeErr').textContent = e.message;
+  $('analyzeErr').hidden = false;
+  $('hintBox').hidden = !lastImage;
+}
+
+$('reanalyze').onclick = async () => {
+  const hint = $('hint').value.trim();
+  for (const id of ['analyzeErr', 'fields', 'entrySave', 'pick', 'hintBox']) $(id).hidden = true;
+  $('analyzing').hidden = false;
+  try {
+    await runAnalysis(hint);
+  } catch (e) {
+    showAnalyzeError(e);
+  }
+};
+
+async function runAnalysis(hint) {
+  const r = await api('/api/analyze', json('POST', { image: lastImage, hint }));
+  $('analyzing').hidden = true;
+  if (!r.items.length) throw new Error(r.note || '음식이나 영양성분표를 찾지 못했어요. 다시 찍어 주세요.');
+  source = r.kind === 'label' ? 'label' : 'food';
+  candidates = r.items;
+  current = candidates[0];
+  // 라벨에 총 제공 횟수가 있어도 기본값은 1회분. 사용자가 배수로 조절.
+  $('note').textContent = r.note;
+  renderPick();
+  applyCandidate();
+  showFields();
+  $('hintBox').hidden = false;
+}
 
 $('entryForm').elements.mult.oninput = applyCandidate;
 $('entryCancel').onclick = () => $('entryDlg').close();
@@ -365,7 +403,104 @@ function shrink(file, max = 1568) {
 // ---------- 시작 ----------
 (async () => {
   meta = await api('/api/meta');
+  $('logout').hidden = !meta.authEnabled;
   fillSelect($('activitySel'), meta.activity);
   fillSelect($('goalSel'), meta.goals);
   await refresh();
-})().catch((e) => alert(e.message));
+})().catch((e) => {
+  const offline = e instanceof TypeError; // fetch 자체가 실패 = 서버/네트워크 문제
+  $('banner').textContent = offline ? '서버에 연결할 수 없어요. 네트워크를 확인하고 새로고침해 주세요.' : e.message;
+  $('banner').hidden = false;
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+// ---------- 주간 리포트 ----------
+function renderReport({ report, targets }) {
+  $('reportCard').hidden = !targets;
+  if (!targets) return;
+  const stat = (v, l) => {
+    const d = document.createElement('div');
+    d.innerHTML = '<b></b><span></span>';
+    d.firstChild.textContent = v;
+    d.lastChild.textContent = l;
+    return d;
+  };
+  $('reportStats').replaceChildren(
+    stat(report.loggedDays + '/7일', '기록한 날'),
+    stat(report.loggedDays ? fmt(report.avg.calories) : '-', '평균 kcal'),
+    stat(report.onTargetDays + '일', '권장량 ±10%'),
+  );
+  const r = report.ratio;
+  $('ratioBar').replaceChildren(
+    ...(r ? [['c', '탄수', r.carbs], ['p', '단백질', r.protein], ['f', '지방', r.fat]] : []).map(([cls, label, pct]) => {
+      const d = document.createElement('div');
+      d.className = cls;
+      d.style.flex = String(Math.max(pct, 1));
+      d.textContent = pct >= 12 ? label + ' ' + pct + '%' : '';
+      d.title = label + ' ' + pct + '%';
+      return d;
+    }),
+  );
+  $('insights').replaceChildren(
+    ...report.insights.map((t) => Object.assign(document.createElement('li'), { textContent: t })),
+  );
+}
+
+// ---------- 체중 ----------
+async function loadWeights() {
+  const { weights } = await api('/api/weights');
+  $('weightCard').hidden = false;
+  const last = weights.at(-1);
+  const first = weights.at(0);
+  const diff = last && first ? Math.round((last.kg - first.kg) * 10) / 10 : 0;
+  $('weightSub').textContent = last
+    ? last.kg + 'kg' + (weights.length > 1 ? ' (' + (diff > 0 ? '+' : '') + diff + 'kg)' : '')
+    : '';
+  $('weightChart').replaceChildren(...(weights.length > 1 ? [weightSvg(weights.slice(-30))] : []));
+}
+
+function weightSvg(points) {
+  const W = 300, H = 110, P = 14;
+  const ks = points.map((p) => p.kg);
+  const lo = Math.min(...ks) - 0.5, hi = Math.max(...ks) + 0.5;
+  const xy = points.map((p, i) => [P + (i / (points.length - 1)) * (W - 2 * P), H - P - ((p.kg - lo) / (hi - lo)) * (H - 2 * P)]);
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  const line = document.createElementNS(ns, 'polyline');
+  line.setAttribute('points', xy.map((p) => p.join(',')).join(' '));
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', 'var(--brand)');
+  line.setAttribute('stroke-width', '2.5');
+  svg.append(line);
+  xy.forEach(([x, y], i) => {
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx', x);
+    c.setAttribute('cy', y);
+    c.setAttribute('r', 3.5);
+    c.setAttribute('fill', 'var(--brand)');
+    const t = document.createElementNS(ns, 'title');
+    t.textContent = points[i].date + ' ' + points[i].kg + 'kg';
+    c.append(t);
+    svg.append(c);
+  });
+  return svg;
+}
+
+$('weightForm').onsubmit = async (ev) => {
+  ev.preventDefault();
+  try {
+    await api('/api/weights', json('PUT', { date, weightKg: $('weightInput').value }));
+    $('weightInput').value = '';
+    refresh();
+  } catch (e) {
+    alert(e.message);
+  }
+};
+
+$('logout').onclick = async (e) => {
+  e.preventDefault();
+  await fetch('/api/logout', { method: 'POST' });
+  location.href = '/login.html';
+};

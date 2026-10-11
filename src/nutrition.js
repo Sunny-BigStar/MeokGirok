@@ -57,3 +57,51 @@ export function sumEntries(entries) {
   for (const f of FIELDS) total[f] = Math.round(total[f] * 10) / 10;
   return total;
 }
+
+/**
+ * 최근 7일 리포트. days: [{ date, totals }] (기록 없는 날은 calories 0).
+ * 평균은 '기록한 날'만 대상으로 해서, 안 적은 날이 평균을 깎지 않도록 한다.
+ */
+export function weeklyReport(days, targets) {
+  const logged = days.filter((d) => d.totals.calories > 0);
+  const n = logged.length;
+  const avg = Object.fromEntries(
+    FIELDS.map((f) => [f, n ? Math.round((logged.reduce((s, d) => s + d.totals[f], 0) / n) * 10) / 10 : 0]),
+  );
+  // 열량 기여 비율 (탄 4, 단 4, 지 9 kcal/g)
+  const kcalFromMacros = avg.carbs * 4 + avg.protein * 4 + avg.fat * 9;
+  const ratio = kcalFromMacros
+    ? {
+        carbs: Math.round(((avg.carbs * 4) / kcalFromMacros) * 100),
+        protein: Math.round(((avg.protein * 4) / kcalFromMacros) * 100),
+        fat: Math.round(((avg.fat * 9) / kcalFromMacros) * 100),
+      }
+    : null;
+
+  const onTargetDays = targets
+    ? logged.filter((d) => Math.abs(d.totals.calories / targets.calories - 1) <= 0.1).length
+    : 0;
+  const sodiumOverDays = targets ? logged.filter((d) => d.totals.sodium > targets.sodium).length : 0;
+
+  const insights = [];
+  if (!n) insights.push('최근 7일간 기록이 없어요. 오늘부터 시작해 보세요.');
+  else if (targets) {
+    if (n < 4) insights.push(`기록한 날이 ${n}일뿐이라 평균이 정확하지 않을 수 있어요.`);
+    const calPct = avg.calories / targets.calories;
+    if (calPct > 1.1) insights.push(`하루 평균 ${Math.round(avg.calories - targets.calories)}kcal 권장량을 넘겼어요.`);
+    else if (calPct < 0.8) insights.push('평균 섭취량이 권장량의 80% 미만이에요. 너무 적게 먹고 있지 않은지 확인해 보세요.');
+    else insights.push('평균 칼로리가 권장량 범위 안에 있어요. 👍');
+    if (avg.protein < targets.protein * 0.8) insights.push('단백질이 부족한 편이에요. 달걀·두부·생선·살코기를 늘려 보세요.');
+    if (avg.fiber < targets.fiber * 0.7) insights.push('식이섬유가 부족해요. 채소·과일·잡곡을 더해 보세요.');
+    if (avg.sugar > targets.sugar) insights.push('당류 섭취가 권장 상한을 넘었어요. 음료와 간식을 점검해 보세요.');
+    if (sodiumOverDays >= 3) insights.push(`나트륨 상한을 넘긴 날이 ${sodiumOverDays}일이에요. 국물과 가공식품을 줄여 보세요.`);
+  }
+  return { loggedDays: n, avg, ratio, onTargetDays, sodiumOverDays, insights };
+}
+
+/** YYYY-MM-DD 형식이면서 실제로 존재하는 날짜인지 (2026-13-45 같은 값 거부) */
+export function isDate(s) {
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(s + 'T00:00:00Z');
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
