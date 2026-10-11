@@ -112,6 +112,7 @@ function renderEntries(entries) {
 function entryRow(e) {
   const li = document.createElement('li');
   li.innerHTML = '<span>' + (SOURCE_ICON[e.source] ?? '') + '</span><div class="info"><div class="name"></div><div class="muted"></div></div><div class="kc"></div><button class="del" aria-label="삭제">✕</button>';
+  li.querySelector('.info').onclick = () => openEdit(e);
   li.querySelector('.name').textContent = e.name;
   li.querySelector('.muted').textContent = `탄 ${fmt(e.carbs)} 단 ${fmt(e.protein)} 지 ${fmt(e.fat)}`;
   li.querySelector('.kc').textContent = `${fmt(e.calories)} kcal`;
@@ -177,6 +178,7 @@ $('profileForm').onsubmit = async (ev) => {
 let candidates = []; // 분석된 후보(영양성분은 '1회 기준')
 let current = null;
 let source = 'manual';
+let editing = null; // 수정 중인 기록(없으면 새 기록)
 
 function resetEntryDialog() {
   $('entryForm').reset();
@@ -184,6 +186,8 @@ function resetEntryDialog() {
   for (const id of ['analyzing', 'analyzeErr', 'preview', 'pick', 'fields', 'entrySave']) $(id).hidden = true;
   candidates = [];
   current = null;
+  editing = null;
+  $('presets').replaceChildren();
 }
 
 function showFields() {
@@ -205,6 +209,24 @@ function applyCandidate() {
   f.fiber.value = Math.round(current.fiber_g * m * 10) / 10;
   f.sodium.value = Math.round(current.sodium_mg * m);
   $('servingDesc').textContent = `기준: ${current.serving_description} (정확도 ${Math.round(current.confidence * 100)}%)`;
+  renderPresets(m);
+}
+
+// 섭취량 빠른 선택. 라벨에 총 제공 횟수가 있으면 '한 통 전체' 추가
+function renderPresets(active) {
+  const steps = [0.5, 1, 1.5, 2];
+  const total = Math.round(current.servings_per_container * 100) / 100;
+  if (total > 1 && !steps.includes(total)) steps.push(total);
+  $('presets').replaceChildren(
+    ...steps.map((v) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = v === total && total > 2 ? `전체 ×${v}` : `×${v}`;
+      b.className = v === active ? 'on' : '';
+      b.onclick = () => (($('entryForm').elements.mult.value = v), applyCandidate());
+      return b;
+    }),
+  );
 }
 
 function renderPick() {
@@ -234,6 +256,23 @@ function openFromFood(food) {
     sugar_g: food.sugar, fiber_g: food.fiber, sodium_mg: food.sodium,
   };
   applyCandidate();
+  showFields();
+  $('entryDlg').showModal();
+}
+
+// 기존 기록 수정: 저장된 값을 그대로 편집 (배수/프리셋 없음)
+function openEdit(e) {
+  resetEntryDialog();
+  editing = e;
+  source = e.source;
+  $('entryTitle').textContent = '기록 수정';
+  const f = $('entryForm').elements;
+  f.mult.parentElement.hidden = true;
+  f.meal.value = e.meal ?? 'snack';
+  f.name.value = e.name;
+  for (const n of NUTRIENTS) f[n.key].value = e[n.key];
+  $('servingDesc').textContent = '';
+  $('note').textContent = '';
   showFields();
   $('entryDlg').showModal();
 }
@@ -287,14 +326,15 @@ $('entryForm').onsubmit = async (ev) => {
   const f = $('entryForm').elements;
   const now = new Date();
   try {
-    await api('/api/entries', json('POST', {
-      date,
-      time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+    const body = {
+      date: editing ? editing.date : date,
+      time: editing ? editing.time : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
       source,
       meal: f.meal.value,
       name: f.name.value,
       ...Object.fromEntries(NUTRIENTS.map((n) => [n.key, f[n.key].value || 0])),
-    }));
+    };
+    await api(editing ? `/api/entries/${editing.id}` : '/api/entries', json(editing ? 'PUT' : 'POST', body));
     $('entryDlg').close();
     refresh();
   } catch (e) {

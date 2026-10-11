@@ -83,3 +83,42 @@ test('분석: 이미지 형식 검증 + 목 결과', async () => {
   assert.equal(body.kind, 'food');
   assert.ok(body.items.length >= 1);
 });
+
+test('기록 수정(PUT): 값 변경, 없는 id는 404, 잘못된 값은 400', async () => {
+  const a = await (await call('POST', '/api/entries', food({ name: '수정전', calories: 100 }))).json();
+  const r = await call('PUT', `/api/entries/${a.id}`, food({ name: '수정후', calories: 250, meal: 'dinner' }));
+  assert.equal(r.status, 200);
+  const saved = await r.json();
+  assert.equal(saved.id, a.id);
+  assert.equal(saved.calories, 250);
+  assert.equal(saved.meal, 'dinner');
+  assert.equal((await call('PUT', '/api/entries/nope', food())).status, 404);
+  assert.equal((await call('PUT', `/api/entries/${a.id}`, food({ calories: 'x' }))).status, 400);
+});
+
+test('CSV 내보내기: BOM, 헤더, 인용/수식 이스케이프', async () => {
+  await call('POST', '/api/entries', food({ name: '=SUM(A1), "특별"', date: '2026-10-12' }));
+  const res = await call('GET', '/api/export.csv');
+  assert.match(res.headers.get('content-type'), /text\/csv/);
+  const buf = Buffer.from(await res.arrayBuffer()); // text()는 BOM을 제거하므로 바이트로 확인
+  assert.deepEqual([...buf.subarray(0, 3)], [0xef, 0xbb, 0xbf]);
+  const text = buf.toString('utf8').slice(1);
+  assert.ok(text.startsWith('date,time,meal,name,calories'));
+  assert.ok(text.includes(`"'=SUM(A1), ""특별"""`));
+});
+
+test('db.json이 손상돼도 백업 후 계속 동작', async () => {
+  const { writeFileSync, readdirSync } = await import('node:fs');
+  writeFileSync(path.join(dir, 'db.json'), '{ broken');
+  const res = await call('GET', '/api/summary?date=2026-10-11');
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).entries.length, 0);
+  assert.ok(readdirSync(dir).some((f) => f.startsWith('db.json.corrupt-')));
+});
+
+test('분석 API는 과도한 요청을 429로 제한', async () => {
+  const img = { image: 'data:image/png;base64,AAAA' };
+  let last;
+  for (let i = 0; i < 25; i++) last = (await call('POST', '/api/analyze', img)).status;
+  assert.equal(last, 429);
+});

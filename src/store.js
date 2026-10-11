@@ -13,6 +13,13 @@ async function load() {
     return JSON.parse(await readFile(FILE, 'utf8'));
   } catch (e) {
     if (e.code === 'ENOENT') return empty();
+    if (e instanceof SyntaxError) {
+      // 손상된 파일은 덮어쓰지 않고 백업해 두고 빈 DB로 시작
+      const backup = `${FILE}.corrupt-${Date.now()}`;
+      await rename(FILE, backup);
+      console.error(`db.json이 손상되어 ${backup} 로 백업했습니다.`);
+      return empty();
+    }
     throw e;
   }
 }
@@ -49,6 +56,16 @@ export const addEntry = (entry) =>
     const saved = { ...entry, id: randomUUID() };
     db.entries.push(saved);
     return saved;
+  });
+
+export const listAll = async () => (await load()).entries;
+
+export const updateEntry = (id, fields) =>
+  mutate((db) => {
+    const i = db.entries.findIndex((e) => e.id === id);
+    if (i < 0) return null;
+    db.entries[i] = { ...db.entries[i], ...fields, id };
+    return db.entries[i];
   });
 
 export const deleteEntry = (id) =>
