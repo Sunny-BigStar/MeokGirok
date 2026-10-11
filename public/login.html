@@ -7,27 +7,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main style="padding-top: 18vh">
-    <form id="f" class="card" style="display: grid; gap: 12px">
+  <main class="login">
+    <form id="f" class="card">
       <h2>먹기록</h2>
       <input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password" required autofocus>
       <div id="err" class="err" hidden></div>
       <button class="primary">로그인</button>
     </form>
   </main>
-  <script>
-    document.getElementById('f').onsubmit = async (e) => {
-      e.preventDefault();
-      const err = document.getElementById('err');
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: document.getElementById('pw').value }),
-      });
-      if (res.ok) return (location.href = '/');
-      err.textContent = (await res.json().catch(() => ({}))).error || '로그인에 실패했습니다.';
-      err.hidden = false;
-    };
-  </script>
+  <script src="login.js"></script>
 </body>
 </html>

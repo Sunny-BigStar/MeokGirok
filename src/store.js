@@ -90,6 +90,16 @@ export const updateEntry = (id, fields) =>
     return db.entries[i];
   });
 
+// from 날짜의 기록을 to 날짜로 복제 (새 id). 복제한 개수를 반환
+export const copyEntries = (from, to) =>
+  mutate((db) => {
+    const copies = db.entries
+      .filter((e) => e.date === from)
+      .map((e) => ({ ...e, date: to, id: randomUUID() }));
+    db.entries.push(...copies);
+    return copies.length;
+  });
+
 export const deleteEntry = (id) =>
   mutate((db) => {
     const before = db.entries.length;

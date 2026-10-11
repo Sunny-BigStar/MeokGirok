@@ -98,6 +98,8 @@ function renderSummary({ totals, targets, percent }) {
 
 function renderEntries(entries) {
   $('empty').hidden = entries.length > 0;
+  $('copyPrev').hidden = true;
+  if (entries.length === 0) offerCopy();
   const nodes = [];
   for (const meal of Object.keys(MEALS)) {
     const group = entries.filter((e) => (e.meal ?? 'snack') === meal);
@@ -111,6 +113,21 @@ function renderEntries(entries) {
   }
   $('entries').replaceChildren(...nodes);
 }
+
+// 오늘 기록이 비어 있고 전날 기록이 있으면 복사 버튼 노출
+async function offerCopy() {
+  const asked = date;
+  const prev = shift(date, -1);
+  const s = await api(`/api/summary?date=${prev}`);
+  if (asked !== date || !s || s.entries.length === 0) return; // 그 사이 날짜가 바뀌었으면 무시
+  $('copyPrev').textContent = `전날 식단 그대로 복사 (${s.entries.length}개, ${fmt(s.totals.calories)} kcal)`;
+  $('copyPrev').hidden = false;
+}
+
+$('copyPrev').onclick = async () => {
+  await api('/api/entries/copy', json('POST', { from: shift(date, -1), to: date }));
+  refresh();
+};
 
 function entryRow(e) {
   const li = document.createElement('li');

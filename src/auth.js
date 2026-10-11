@@ -5,7 +5,7 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 // 비밀번호를 바꾸면 기존 세션이 모두 무효화된다.
 const COOKIE = 'mg_session';
 const MAX_AGE_S = 30 * 24 * 3600;
-const PUBLIC_PATHS = new Set(['/login.html', '/api/login', '/api/logout', '/style.css', '/icon.svg', '/manifest.webmanifest']);
+const PUBLIC_PATHS = new Set(['/login.html', '/login.js', '/api/login', '/api/logout', '/style.css', '/icon.svg', '/manifest.webmanifest']);
 
 const password = () => process.env.APP_PASSWORD || '';
 export const authEnabled = () => password() !== '';
@@ -49,7 +49,9 @@ export function loginHandler(req, res) {
     return res.status(401).json({ error: '비밀번호가 올바르지 않습니다.' });
   }
   fails.delete(req.ip);
-  res.cookie(COOKIE, token(), { httpOnly: true, sameSite: 'strict', maxAge: MAX_AGE_S * 1000, path: '/' });
+  // HTTPS(리버스 프록시의 x-forwarded-proto 포함)로 접속했을 때만 Secure 속성 부여
+  const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.cookie(COOKIE, token(), { httpOnly: true, sameSite: 'strict', secure, maxAge: MAX_AGE_S * 1000, path: '/' });
   res.json({ ok: true });
 }
 

@@ -8,6 +8,20 @@ import { authEnabled, authMiddleware, loginHandler, logoutHandler } from './auth
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const app = express();
+app.disable('x-powered-by');
+
+// 보안 헤더: 외부 스크립트/리소스 차단(XSS 피해 축소), 프레임 삽입·MIME 스니핑 방지
+app.use((_req, res, next) => {
+  res.set({
+    'Content-Security-Policy':
+      "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; " +
+      "connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'X-Frame-Options': 'DENY',
+  });
+  next();
+});
 app.use(express.json({ limit: '12mb' }));
 app.use(authMiddleware);
 app.post('/api/login', loginHandler);
@@ -143,6 +157,14 @@ app.delete('/api/weights/:date', wrap(async (req, res) => {
   res.status(ok ? 204 : 404).end();
 }));
 
+// 전날(또는 다른 날) 식단 통째로 복사
+app.post('/api/entries/copy', wrap(async (req, res) => {
+  const { from, to } = req.body ?? {};
+  if (!isDate(from) || !isDate(to) || from === to)
+    return res.status(400).json({ error: '복사할 날짜가 올바르지 않습니다.' });
+  res.status(201).json({ copied: await store.copyEntries(from, to) });
+}));
+
 app.delete('/api/entries/:id', wrap(async (req, res) => {
   const ok = await store.deleteEntry(req.params.id);
   res.status(ok ? 204 : 404).end();
@@ -195,6 +217,7 @@ app.get('/api/summary', wrap(async (req, res) => {
 
 app.use((err, _req, res, _next) => {
   if (err instanceof AnalyzeError) return res.status(err.status).json({ error: err.message });
+  if (err.type === 'entity.parse.failed') return res.status(400).json({ error: '요청 형식이 올바르지 않습니다.' });
   if (err.type === 'entity.too.large') return res.status(413).json({ error: '이미지가 너무 큽니다.' });
   console.error(err);
   res.status(500).json({ error: '서버 오류가 발생했습니다.' });
