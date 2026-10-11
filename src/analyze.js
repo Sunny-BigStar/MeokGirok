@@ -55,6 +55,7 @@ export class AnalyzeError extends Error {
 
 /** @param {string} base64 @param {string} mediaType */
 export async function analyzeImage(base64, mediaType) {
+  if (process.env.ANALYZE_MOCK === '1') return mockResult(); // API 키 없이 UI 확인용
   let response;
   try {
     const client = new Anthropic(); // ANTHROPIC_API_KEY 등 환경에서 자동 인식
@@ -94,4 +95,18 @@ export async function analyzeImage(base64, mediaType) {
   } catch {
     throw new AnalyzeError('분석 결과를 해석하지 못했습니다. 다시 시도해 주세요.');
   }
+}
+
+function mockResult() {
+  const item = (name, serving_description, calories, carbs_g, sugar_g, fiber_g, protein_g, fat_g, sodium_mg) => ({
+    name, serving_description, servings_per_container: 1, calories, carbs_g, sugar_g, fiber_g, protein_g, fat_g, sodium_mg, confidence: 0.6,
+  });
+  return {
+    kind: 'food',
+    note: '[목업] ANALYZE_MOCK=1 로 생성된 가짜 분석 결과입니다.',
+    items: [
+      item('공기밥', '1공기 약 210g', 313, 69, 0, 1, 5.5, 0.6, 2),
+      item('김치찌개', '1인분 약 350g', 220, 12, 4, 3, 16, 12, 1500),
+    ],
+  };
 }

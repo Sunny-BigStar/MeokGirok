@@ -66,3 +66,9 @@ dialog img { max-width: 100%; max-height: 200px; object-fit: contain; border-rad
 #pick button { font-size: 14px; }
 #pick button.on { border-color: var(--brand); background: var(--brand); color: #fff; }
 [hidden] { display: none !important; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { border-radius: 99px; padding: 6px 12px; font-size: 14px; }
+.chips button small { color: var(--muted); margin-left: 4px; }
+.meal-head { display: flex; justify-content: space-between; margin: 12px 0 2px; font-size: 14px; font-weight: 700; color: var(--brand-d); }
+.meal-head:first-child { margin-top: 0; }

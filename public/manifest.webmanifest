@@ -1,0 +1,10 @@
+{
+  "name": "먹기록",
+  "short_name": "먹기록",
+  "description": "사진으로 칼로리를 기록하고 하루 권장량 달성률을 확인",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f7f4",
+  "theme_color": "#2e9e6b",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

@@ -9,6 +9,8 @@ const NUTRIENTS = [
   { key: 'fiber', label: '식이섬유', unit: 'g' },
   { key: 'sodium', label: '나트륨', unit: 'mg', limit: true },
 ];
+const MEALS = { breakfast: '아침', lunch: '점심', dinner: '저녁', snack: '간식' };
+const mealByHour = (h) => (h < 10 ? 'breakfast' : h < 15 ? 'lunch' : h < 21 ? 'dinner' : 'snack');
 const SOURCE_ICON = { label: '🏷️', food: '🍽️', manual: '✏️' };
 
 const localDate = (d = new Date()) =>
@@ -43,6 +45,24 @@ async function refresh() {
   if (hasProfile) renderSummary(s);
   renderEntries(s.entries);
   renderWeek(s);
+  loadRecent();
+}
+
+async function loadRecent() {
+  const { items } = await api(`/api/recent?date=${date}`);
+  $('recentCard').hidden = items.length === 0;
+  $('recent').replaceChildren(
+    ...items.map((food) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = food.name;
+      const small = document.createElement('small');
+      small.textContent = `${fmt(food.calories)}kcal`;
+      b.append(small);
+      b.onclick = () => openFromFood(food);
+      return b;
+    }),
+  );
 }
 
 function renderSummary({ totals, targets, percent }) {
@@ -75,22 +95,32 @@ function renderSummary({ totals, targets, percent }) {
 
 function renderEntries(entries) {
   $('empty').hidden = entries.length > 0;
-  $('entries').replaceChildren(
-    ...entries.map((e) => {
-      const li = document.createElement('li');
-      li.innerHTML = `<span>${SOURCE_ICON[e.source] ?? ''}</span><div class="info"><div class="name"></div><div class="muted"></div></div><div class="kc"></div><button class="del" aria-label="삭제">✕</button>`;
-      li.querySelector('.name').textContent = e.name;
-      li.querySelector('.muted').textContent =
-        `${e.time === '00:00' ? '' : e.time + ' · '}탄 ${fmt(e.carbs)} 단 ${fmt(e.protein)} 지 ${fmt(e.fat)}`;
-      li.querySelector('.kc').textContent = `${fmt(e.calories)} kcal`;
-      li.querySelector('.del').onclick = async () => {
-        if (!confirm(`"${e.name}" 기록을 삭제할까요?`)) return;
-        await api(`/api/entries/${e.id}`, { method: 'DELETE' });
-        refresh();
-      };
-      return li;
-    }),
-  );
+  const nodes = [];
+  for (const meal of Object.keys(MEALS)) {
+    const group = entries.filter((e) => (e.meal ?? 'snack') === meal);
+    if (!group.length) continue;
+    const head = document.createElement('li');
+    head.className = 'meal-head';
+    head.innerHTML = '<span></span><span></span>';
+    head.children[0].textContent = MEALS[meal];
+    head.children[1].textContent = fmt(group.reduce((s, e) => s + e.calories, 0)) + ' kcal';
+    nodes.push(head, ...group.map(entryRow));
+  }
+  $('entries').replaceChildren(...nodes);
+}
+
+function entryRow(e) {
+  const li = document.createElement('li');
+  li.innerHTML = '<span>' + (SOURCE_ICON[e.source] ?? '') + '</span><div class="info"><div class="name"></div><div class="muted"></div></div><div class="kc"></div><button class="del" aria-label="삭제">✕</button>';
+  li.querySelector('.name').textContent = e.name;
+  li.querySelector('.muted').textContent = `탄 ${fmt(e.carbs)} 단 ${fmt(e.protein)} 지 ${fmt(e.fat)}`;
+  li.querySelector('.kc').textContent = `${fmt(e.calories)} kcal`;
+  li.querySelector('.del').onclick = async () => {
+    if (!confirm(`"${e.name}" 기록을 삭제할까요?`)) return;
+    await api(`/api/entries/${e.id}`, { method: 'DELETE' });
+    refresh();
+  };
+  return li;
 }
 
 function renderWeek({ week, targets }) {
@@ -150,6 +180,7 @@ let source = 'manual';
 
 function resetEntryDialog() {
   $('entryForm').reset();
+  $('entryForm').elements.meal.value = mealByHour(new Date().getHours());
   for (const id of ['analyzing', 'analyzeErr', 'preview', 'pick', 'fields', 'entrySave']) $(id).hidden = true;
   candidates = [];
   current = null;
@@ -188,6 +219,23 @@ function renderPick() {
       return b;
     }),
   );
+}
+
+// 지난 기록을 1회 기준값으로 삼아 입력창을 미리 채움
+function openFromFood(food) {
+  resetEntryDialog();
+  $('entryTitle').textContent = '다시 기록';
+  $('entryForm').elements.mult.parentElement.hidden = false;
+  source = food.source;
+  $('note').textContent = '';
+  current = {
+    name: food.name, serving_description: '지난 기록 기준', confidence: 1,
+    calories: food.calories, carbs_g: food.carbs, protein_g: food.protein, fat_g: food.fat,
+    sugar_g: food.sugar, fiber_g: food.fiber, sodium_mg: food.sodium,
+  };
+  applyCandidate();
+  showFields();
+  $('entryDlg').showModal();
 }
 
 $('manualBtn').onclick = () => {
@@ -243,6 +291,7 @@ $('entryForm').onsubmit = async (ev) => {
       date,
       time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
       source,
+      meal: f.meal.value,
       name: f.name.value,
       ...Object.fromEntries(NUTRIENTS.map((n) => [n.key, f[n.key].value || 0])),
     }));

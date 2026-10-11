@@ -7,19 +7,22 @@
 - 분석 결과를 저장 전에 확인·수정 (여러 음식이면 선택, 섭취량 배수 조절)
 - 내 정보(성별/나이/키/몸무게/활동량/목표) → Mifflin-St Jeor 공식으로 권장 칼로리와 탄단지·당류·식이섬유·나트륨 기준 계산
 - 하루 달성률(링 + 영양소별 막대), 날짜 이동, 최근 7일 칼로리 그래프
-- 직접 입력 지원
+- 끼니 구분(아침/점심/저녁/간식, 시간대로 자동 선택)과 끼니별 칼로리 합계
+- 자주 먹는 음식(최근 30일 빈도순) 탭 한 번으로 재기록
+- 직접 입력, 홈 화면에 설치 가능한 PWA 매니페스트
 
 ## 실행
 ```bash
 npm install
 cp .env.example .env   # ANTHROPIC_API_KEY 입력
 npm start              # http://localhost:3000
+npm run start:mock     # API 키 없이 가짜 분석 결과로 UI 확인
 npm test
 ```
 휴대폰에서 쓰려면 같은 네트워크에서 `http://<PC IP>:3000` 으로 접속하세요(카메라 촬영 가능).
 
 ## 구조
-- `src/server.js` Express API · `src/analyze.js` Claude 비전 분석(구조화 출력) · `src/nutrition.js` 권장량 계산 · `src/store.js` JSON 파일 저장(`data/`, git 제외)
+- `src/app.js` Express API(`server.js`는 실행 진입점) · `src/analyze.js` Claude 비전 분석(구조화 출력) · `src/nutrition.js` 권장량 계산 · `src/store.js` JSON 파일 저장(`data/`, git 제외)
 - `public/` 모바일 우선 웹 UI (프레임워크 없음)
 
 ## 주의
