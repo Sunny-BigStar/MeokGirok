@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>먹기록</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>먹기록</h1>
+    <div class="datenav">
+      <button id="prev" aria-label="전날">‹</button>
+      <input type="date" id="date">
+      <button id="next" aria-label="다음날">›</button>
+    </div>
+    <button id="profileBtn" class="ghost">내 정보</button>
+  </header>
+
+  <main>
+    <section id="setup" class="card" hidden>
+      <h2>먼저 내 정보를 입력해 주세요</h2>
+      <p class="muted">키·몸무게·활동량으로 하루 권장 섭취량을 계산합니다.</p>
+      <button id="setupBtn" class="primary">내 정보 입력</button>
+    </section>
+
+    <section id="summary" class="card" hidden>
+      <div class="kcal">
+        <div class="ring" id="ring"><div class="ring-in"><b id="kcalNow">0</b><span id="kcalGoal"></span></div></div>
+        <div class="kcal-text">
+          <div id="kcalMsg" class="big"></div>
+          <div id="kcalSub" class="muted"></div>
+        </div>
+      </div>
+      <div id="bars"></div>
+    </section>
+
+    <section class="add">
+      <label class="primary btn" for="photo">📷 사진으로 기록</label>
+      <input type="file" id="photo" accept="image/*" hidden>
+      <button id="manualBtn" class="ghost">직접 입력</button>
+    </section>
+
+    <section class="card">
+      <h2>오늘 먹은 것</h2>
+      <ul id="entries" class="entries"></ul>
+      <p id="empty" class="muted" hidden>아직 기록이 없어요. 사진을 찍어 보세요.</p>
+    </section>
+
+    <section class="card">
+      <h2>최근 7일 칼로리</h2>
+      <div id="week" class="week"></div>
+    </section>
+
+    <p class="muted foot">권장량은 Mifflin-St Jeor 공식 기반의 일반 추정치이며, AI 분석값은 오차가 있을 수 있습니다. 의학적 조언이 아닙니다.</p>
+  </main>
+
+  <!-- 분석/수동입력 확인 -->
+  <dialog id="entryDlg">
+    <form method="dialog" id="entryForm">
+      <h2 id="entryTitle">기록 추가</h2>
+      <div id="analyzing" class="muted" hidden>분석 중이에요… 잠시만 기다려 주세요.</div>
+      <div id="analyzeErr" class="err" hidden></div>
+      <img id="preview" alt="" hidden>
+      <div id="pick" class="muted" hidden></div>
+      <div id="fields" hidden>
+        <label>이름 <input name="name" required maxlength="100"></label>
+        <p id="servingDesc" class="muted"></p>
+        <label>섭취량(배) <input name="mult" type="number" step="0.25" min="0.25" value="1"></label>
+        <div class="grid">
+          <label>칼로리(kcal) <input name="calories" type="number" step="any" min="0" required></label>
+          <label>탄수화물(g) <input name="carbs" type="number" step="any" min="0"></label>
+          <label>단백질(g) <input name="protein" type="number" step="any" min="0"></label>
+          <label>지방(g) <input name="fat" type="number" step="any" min="0"></label>
+          <label>당류(g) <input name="sugar" type="number" step="any" min="0"></label>
+          <label>식이섬유(g) <input name="fiber" type="number" step="any" min="0"></label>
+          <label>나트륨(mg) <input name="sodium" type="number" step="any" min="0"></label>
+        </div>
+        <p id="note" class="muted"></p>
+      </div>
+      <div class="actions">
+        <button type="button" id="entryCancel" class="ghost">취소</button>
+        <button type="submit" id="entrySave" class="primary" hidden>저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 프로필 -->
+  <dialog id="profileDlg">
+    <form method="dialog" id="profileForm">
+      <h2>내 정보</h2>
+      <label>성별
+        <select name="sex" required><option value="">선택</option><option value="male">남</option><option value="female">여</option></select>
+      </label>
+      <div class="grid">
+        <label>나이 <input name="age" type="number" min="10" max="100" required></label>
+        <label>키(cm) <input name="heightCm" type="number" step="any" required></label>
+        <label>몸무게(kg) <input name="weightKg" type="number" step="any" required></label>
+      </div>
+      <label>활동량 <select name="activity" id="activitySel" required></select></label>
+      <label>목표 <select name="goal" id="goalSel" required></select></label>
+      <div id="profileErr" class="err" hidden></div>
+      <div class="actions">
+        <button type="button" id="profileCancel" class="ghost">닫기</button>
+        <button type="submit" class="primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

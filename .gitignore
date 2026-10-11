@@ -25,3 +25,7 @@ secrets.*
 
 # Logs
 *.log
+
+# 개인 식단/프로필 데이터
+data/
+!.env.example
