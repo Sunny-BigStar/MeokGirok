@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>먹기록</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="app">
+    <!-- 화면 1: 초기설정 -->
+    <section id="screen-setup" class="screen" hidden>
+      <div class="hero">
+        <img src="assets/character/hero.png" alt="먹기록 캐릭터" />
+      </div>
+      <h1>반가워요! 먹기록이에요</h1>
+      <p class="lead">몇 가지만 알려주시면 하루 권장 열량을 계산해 드릴게요.</p>
+
+      <form id="setup-form" class="card" novalidate>
+        <div class="field">
+          <label for="age">나이</label>
+          <div class="input-unit">
+            <input id="age" name="age" type="number" inputmode="numeric" min="10" max="100" />
+            <span>세</span>
+          </div>
+          <p class="hint" id="hint-age"></p>
+        </div>
+
+        <fieldset class="field">
+          <legend>성별</legend>
+          <div class="segmented">
+            <label><input type="radio" name="sex" value="male" /><span>남</span></label>
+            <label><input type="radio" name="sex" value="female" /><span>여</span></label>
+          </div>
+        </fieldset>
+
+        <div class="field">
+          <label for="height">키</label>
+          <div class="input-unit">
+            <input id="height" name="height" type="number" inputmode="decimal" min="100" max="230" step="0.1" />
+            <span>cm</span>
+          </div>
+          <p class="hint" id="hint-height"></p>
+        </div>
+
+        <div class="field">
+          <label for="weight">몸무게</label>
+          <div class="input-unit">
+            <input id="weight" name="weight" type="number" inputmode="decimal" min="25" max="250" step="0.1" />
+            <span>kg</span>
+          </div>
+          <p class="hint" id="hint-weight"></p>
+        </div>
+
+        <fieldset class="field">
+          <legend>활동량</legend>
+          <div id="activity-options" class="choices"></div>
+        </fieldset>
+
+        <div class="result">
+          <p id="calorie-result"></p>
+          <p class="note">참고용 · 일반적인 계산식(Mifflin-St Jeor) 기준이에요.</p>
+        </div>
+
+        <button id="setup-save" type="submit" class="btn-primary" disabled>저장하고 시작하기</button>
+      </form>
+    </section>
+
+    <!-- 화면 2: 오늘 (1단계 자리표시자) -->
+    <section id="screen-today" class="screen" hidden>
+      <h1>오늘</h1>
+      <div class="card">
+        <p>하루 권장 열량 약 <strong id="today-calories"></strong> kcal</p>
+        <p class="note">참고용 · 일반적인 계산식 기준이에요.</p>
+      </div>
+      <button id="open-setup" type="button" class="btn-secondary">설정 다시 열기</button>
+    </section>
+  </main>
+
+  <script src="js/constants.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

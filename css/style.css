@@ -1,0 +1,225 @@
+/* 색상은 캐릭터 시트에서 가져옴 (CLAUDE.md 8장) */
+:root {
+  --bg: #fbf5ee;
+  --card: #f9f2e5;
+  --green: #8ea64f;
+  --green-dark: #516c44;
+  --brown: #cc9669;
+  --pink: #fee0d0;
+  --text: #3d3a35;
+  --muted: #8a8378;
+  --radius: 18px;
+  --shadow: 0 4px 14px rgba(81, 108, 68, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  line-height: 1.5;
+}
+
+/* 모바일 세로 우선, 데스크톱에서는 가운데 좁은 폭으로 */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+h1 {
+  color: var(--green-dark);
+  font-size: 1.5rem;
+  margin: 8px 0 4px;
+}
+
+.lead {
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+
+/* hero.png 배경이 크림색 사각형이라 같은 배경 위에 둔다 */
+.hero {
+  text-align: center;
+}
+
+.hero img {
+  width: 180px;
+  max-width: 50%;
+  height: auto;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.field {
+  border: 0;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.field > label,
+.field > legend {
+  display: block;
+  font-weight: 600;
+  color: var(--green-dark);
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.input-unit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.input-unit input {
+  flex: 1;
+  min-width: 0;
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 1.5px solid #e6dccb;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.input-unit input:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.input-unit span {
+  color: var(--muted);
+  min-width: 2em;
+}
+
+.hint {
+  margin: 4px 0 0;
+  min-height: 1em;
+  font-size: 0.85rem;
+  color: var(--brown);
+}
+
+/* 성별: 두 칸 토글 */
+.segmented {
+  display: flex;
+  gap: 8px;
+}
+
+.segmented label {
+  flex: 1;
+}
+
+.segmented input,
+.choice input {
+  position: absolute;
+  opacity: 0;
+}
+
+.segmented span {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  border: 1.5px solid #e6dccb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.segmented input:checked + span,
+.choice input:checked + .choice-body {
+  border-color: var(--green);
+  background: #eef3e0;
+  color: var(--green-dark);
+}
+
+.segmented input:focus-visible + span,
+.choice input:focus-visible + .choice-body {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+/* 활동량: 세로 선택지 */
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-body {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px;
+  border: 1.5px solid #e6dccb;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.choice-body small {
+  color: var(--muted);
+}
+
+.result {
+  background: var(--pink);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.result p {
+  margin: 0;
+}
+
+#calorie-result strong,
+#today-calories {
+  color: var(--green-dark);
+  font-size: 1.3rem;
+}
+
+.note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.btn-primary,
+.btn-secondary {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 14px;
+  border: 0;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+}
+
+.btn-primary:disabled {
+  background: #c9d3b0;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--green-dark);
+  border: 1.5px solid var(--green);
+}
