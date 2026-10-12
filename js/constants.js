@@ -91,5 +91,33 @@ const NUTRIENT_COLORS = {
 // 내 정보 '나의 영양 기준'·오늘 영양 요약 막대에 보이는 5개 (나머지는 펼쳐보기)
 const MAIN_NUTRIENTS = ['carbs', 'protein', 'fat', 'sugars', 'sodium'];
 
+// 영양 균형 판단 임계값 — CLAUDE.md 5장 '초안'이라 여기 한 곳에서만 고친다
+const BALANCE_RULES = {
+  limitKeys: ['sodium', 'sugars', 'fat', 'sat_fat', 'cholesterol'], // 많이 먹을수록 주의하는 제한 영양소
+  caution: 0.8, // 기준의 80% 이상 → '주의' (등급에는 세지 않음, 사용자 결정 2026-10-12)
+  over: 1.0, // 100% 이상 → '넘었어요'
+  severe: 1.5, // 제한 영양소 하나라도 150% 이상 → 바로 '불균형'
+  caloriesOver: 1.1, // 열량은 권장량의 110% 초과부터 '넘었어요'
+  mildMax: 2, // 걸리는 항목 1~2개 '약간 불균형', 3개 이상 '불균형'
+};
+
+const BALANCE_GRADES = {
+  good: '균형',
+  mild: '약간 불균형',
+  bad: '불균형',
+};
+
+// 다음 끼니 제안 한 줄 — AI가 아니라 고정 문구. 처방처럼 들리지 않게 "~해 봐도 좋아요" 톤 (7장)
+const NEXT_MEAL_TIPS = {
+  sodium: '다음 끼니는 국물을 조금 남겨 봐도 좋아요.',
+  sugars: '다음엔 단 음료 대신 물이나 차를 골라 봐도 좋아요.',
+  fat: '다음 끼니는 튀김보다 구이·찜 메뉴도 괜찮아요.',
+  sat_fat: '다음 끼니는 튀김보다 구이·찜 메뉴도 괜찮아요.',
+  cholesterol: '다음 끼니엔 채소가 든 메뉴를 곁들여 봐도 좋아요.',
+  calories: '다음 끼니는 가볍게 골라 봐도 좋아요.',
+  protein: '다음 끼니에 달걀·두유·닭가슴살 같은 단백질을 곁들여 봐요.',
+  none: '지금처럼 골고루 챙겨 먹어요.',
+};
+
 // 먹은 양 배수 허용 범위
 const MULTIPLIER_LIMITS = { min: 0.1, max: 10 };

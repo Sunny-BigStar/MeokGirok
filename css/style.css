@@ -1186,3 +1186,254 @@ select:focus {
     padding: 14px 32px;
   }
 }
+
+/* ---------- 3단계: 오늘의 영양 요약 · 영양 균형 ---------- */
+
+/* 모바일: 링 위 · 막대 아래 / 데스크톱: 링 왼쪽 · 막대 오른쪽 (8-1) */
+.summary-body {
+  display: grid;
+  gap: 16px;
+}
+
+.ring-box {
+  position: relative;
+  width: 168px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.ring {
+  width: 168px;
+  height: 168px;
+  transform: rotate(-90deg); /* 12시 방향부터 채우기 */
+}
+
+.ring circle {
+  fill: none;
+  stroke-width: 12;
+}
+
+.ring-track {
+  stroke: var(--green-soft);
+}
+
+.ring-fill {
+  stroke: var(--green);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease;
+}
+
+.ring-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 168px;
+  height: 168px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.ring-text strong {
+  font-family: var(--font-title);
+  font-size: 1.9rem;
+  line-height: 1.1;
+  color: var(--green-dark);
+}
+
+.ring-text span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.ring-note {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--green-dark);
+}
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* 한 줄: [● 이름] [섭취/기준] [%] / 아래 막대 */
+.bar-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label value pct'
+    'bar bar bar';
+  gap: 4px 10px;
+  align-items: baseline;
+  padding: 6px 0;
+}
+
+.bar-label {
+  grid-area: label;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bar-value {
+  grid-area: value;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pct {
+  grid-area: pct;
+  min-width: 44px;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
+.pct em {
+  font-style: normal;
+  font-size: 0.75rem;
+}
+
+/* 넘었어요는 빨강 대신 나무 숟가락 갈색 — 비난하는 느낌을 줄이기 위해 (사용자 승인) */
+.pct.status-over,
+.pct.status-low {
+  color: var(--brown);
+}
+
+.pct.status-caution {
+  color: #d99a2b;
+}
+
+.pct.muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.bar-track {
+  grid-area: bar;
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: #f1ebe0;
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.more-bars {
+  margin-top: 8px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+
+.more-bars > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* 균형 카드: 균형 초록 · 약간 불균형 주황 · 불균형 연한 빨강 (4-1) */
+.balance-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1.5px solid transparent;
+}
+
+.balance-card.grade-good {
+  background: #eef5e2;
+  border-color: #cfe0b0;
+}
+
+.balance-card.grade-mild {
+  background: #fff1df;
+  border-color: #f6d3a5;
+}
+
+.balance-card.grade-bad {
+  background: #fde8e4;
+  border-color: #f4c3b9;
+}
+
+.balance-card h2 {
+  margin-bottom: 8px;
+}
+
+.balance-card.grade-mild h2 {
+  color: #b86f12;
+}
+
+.balance-card.grade-bad h2 {
+  color: #b5533f;
+}
+
+#balance-lines p {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+}
+
+.balance-tip {
+  margin: 8px 0 0;
+  font-size: 0.88rem;
+  color: var(--green-dark);
+}
+
+.balance-tip:not(:empty)::before {
+  content: '다음 끼니 제안 · ';
+  font-weight: 700;
+}
+
+.balance-buddy {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 96px;
+}
+
+.balance-buddy img {
+  width: 88px;
+  height: auto;
+}
+
+/* 저장 직후 말풍선: 카드 맨 위 전체 폭, 꼬리는 오른쪽 아래 캐릭터를 가리킴 */
+.buddy-bubble {
+  grid-column: 1 / -1;
+  justify-self: end;
+  max-width: 100%;
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.buddy-bubble::after {
+  left: auto;
+  right: 40px;
+}
+
+@media (min-width: 900px) {
+  .summary-body {
+    grid-template-columns: 200px minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .balance-buddy img {
+    width: 104px;
+  }
+}

@@ -357,7 +357,7 @@ async function saveMeal() {
       upsertMeal({ ...existing, items: existing.items.concat(items) });
       if (draft.isEdit) deleteMeal(draft.id);
       draft = null;
-      recordCallbacks.onDone(`${mealLabel(info.meal)} 끼니에 합쳤어요.`);
+      recordCallbacks.onDone(`${mealLabel(info.meal)} 끼니에 합쳤어요.`, { saved: true });
       return;
     }
     // 'separate'면 아래에서 따로 저장
@@ -366,7 +366,7 @@ async function saveMeal() {
   const isEdit = draft.isEdit;
   upsertMeal({ id: draft.id, date: info.date, time: info.time, meal: info.meal, items });
   draft = null;
-  recordCallbacks.onDone(isEdit ? '끼니를 고쳤어요.' : '끼니를 기록했어요.');
+  recordCallbacks.onDone(isEdit ? '끼니를 고쳤어요.' : '끼니를 기록했어요.', { saved: true });
 }
 
 // ---------- 화면 열기 ----------

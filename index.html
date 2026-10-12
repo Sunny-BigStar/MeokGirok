@@ -33,13 +33,47 @@
     <main class="app">
       <p id="toast" class="toast" role="status" hidden></p>
 
-      <!-- 화면 1: 오늘 (영양 요약·균형 카드는 3단계, 날짜 이동·캘린더는 6단계) -->
+      <!-- 화면 1: 오늘 (날짜 이동·캘린더는 6단계) -->
       <section id="screen-today" class="screen" hidden>
         <h1 id="today-date" class="date-title"></h1>
 
-        <div class="card">
-          <p>하루 권장 열량 약 <strong id="today-calories"></strong> kcal</p>
-          <p class="note">참고용 · 일반적인 계산식 기준이에요.</p>
+        <!-- 오늘의 영양 요약: 왼쪽 원형 링(열량) + 오른쪽 영양소 막대 5줄 (CLAUDE.md 4-1, 5장) -->
+        <div class="card summary-card">
+          <h2>오늘의 영양 요약</h2>
+          <div class="summary-body">
+            <div class="ring-box">
+              <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="ring-track" cx="60" cy="60" r="52" />
+                <circle id="ring-fill" class="ring-fill" cx="60" cy="60" r="52" />
+              </svg>
+              <div class="ring-text">
+                <strong id="ring-value">0</strong>
+                <span>/ <span id="ring-target">0</span> kcal</span>
+              </div>
+              <p id="ring-note" class="ring-note"></p>
+            </div>
+            <ul id="nutrient-bars" class="bars"></ul>
+          </div>
+          <details class="more-bars">
+            <summary>포화지방 · 트랜스지방 · 콜레스테롤</summary>
+            <ul id="nutrient-bars-more" class="bars"></ul>
+          </details>
+          <p id="summary-missing" class="note" hidden>* 일부 음식은 값이 없어 실제보다 적게 보일 수 있어요.</p>
+          <p class="note">참고용 · 일반적인 계산식과 식약처 1일 영양성분 기준치 기준이에요.</p>
+        </div>
+
+        <!-- 오늘의 영양 균형: 등급 + 무엇이 과하고 부족한지 + 다음 끼니 제안 + 캐릭터 (표정은 기록 습관 기준, 8장) -->
+        <div id="balance-card" class="card balance-card">
+          <!-- 저장 직후 말풍선: 카드 위쪽 전체 폭 (캐릭터 칸 위에 띄우면 좁은 화면에서 제목을 가림) -->
+          <p id="buddy-bubble" class="bubble buddy-bubble" role="status" hidden></p>
+          <div class="balance-text">
+            <h2 id="balance-title">오늘의 영양 균형</h2>
+            <div id="balance-lines"></div>
+            <p id="balance-tip" class="balance-tip"></p>
+          </div>
+          <div class="balance-buddy">
+            <img id="buddy-img" src="assets/character/expr-default.png" alt="" />
+          </div>
         </div>
 
         <div class="card">
@@ -209,6 +243,7 @@
   <script src="js/storage.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/entries.js"></script>
+  <script src="js/summary.js"></script>
   <script src="js/entry-form.js"></script>
   <script src="js/app.js"></script>
 </body>

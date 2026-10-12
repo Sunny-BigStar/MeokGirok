@@ -70,14 +70,147 @@ function closeMealMenus(except) {
   });
 }
 
-// 오늘 화면 (영양 요약·균형 카드는 3단계에서 추가)
-function renderToday() {
+// ---------- 영양 요약 카드 ----------
+
+// 표시용 숫자: kcal·mg은 정수, g은 정수(1 g 미만만 소수 첫째 자리). 저장값은 그대로
+function formatAmount(value, unit) {
+  if (value === null) return '–';
+  if (unit === 'g' && value > 0 && value < 1) return String(Math.round(value * 10) / 10);
+  return formatNumber(Math.round(value));
+}
+
+const STATUS_TEXT = {
+  caution: '주의',
+  over: '넘었어요',
+  low: '아직 부족',
+  good: '적당해요',
+  plenty: '넉넉해요',
+};
+
+// 막대 한 줄: 이름 · 섭취/기준 · 막대(영양소 색) · % 또는 상태
+function barHtml(r, missing) {
+  const star = missing && r.value !== null ? '*' : '';
+  let targetText;
+  if (r.key === 'protein') targetText = `${r.target.min}~${r.target.max} ${r.unit}`;
+  else if (r.target === null) targetText = '기준 없음';
+  else targetText = `${formatNumber(r.target)} ${r.unit}`;
+  const valueText = r.target === null ? `${formatAmount(r.value, r.unit)} ${r.unit}${star}` : `${formatAmount(r.value, r.unit)}${star} / ${targetText}`;
+
+  // 오른쪽 표시: 단백질은 범위 대비 상태, 나머지는 %(+주의·넘었어요)
+  let right = '';
+  if (r.status === 'unknown') right = '<span class="pct muted">값 없음</span>';
+  else if (r.key === 'protein') right = `<span class="pct status-${r.status}">${STATUS_TEXT[r.status]}</span>`;
+  else if (r.pct !== null) {
+    const tag = STATUS_TEXT[r.status] ? ` <em>${STATUS_TEXT[r.status]}</em>` : '';
+    right = `<span class="pct status-${r.status}">${Math.round(r.pct * 100)}%${tag}</span>`;
+  }
+
+  // 기준이 없는 트랜스지방은 막대 없이 g만
+  const bar =
+    r.target === null
+      ? ''
+      : `<span class="bar-track"><span class="bar-fill" style="width:${Math.min((r.pct || 0) * 100, 100)}%;background:${NUTRIENT_COLORS[r.key] || 'var(--green)'}"></span></span>`;
+  return `
+    <li class="bar-row" data-key="${r.key}">
+      <span class="bar-label"><span class="dot" style="background:${NUTRIENT_COLORS[r.key] || 'var(--muted)'}"></span>${r.label}</span>
+      <span class="bar-value">${valueText}</span>
+      ${right}
+      ${bar}
+    </li>`;
+}
+
+const RING_LEN = 2 * Math.PI * 52; // 원 둘레 (r=52)
+
+function renderSummary(day, judged) {
+  const cal = judged.calories;
+  document.getElementById('ring-value').textContent = formatNumber(cal.value === null ? 0 : cal.value);
+  document.getElementById('ring-target').textContent = formatNumber(cal.target);
+  // 100%를 넘으면 꽉 찬 링 (넘은 정도는 아래 문구로)
+  const filled = Math.min(cal.pct || 0, 1);
+  const ring = document.getElementById('ring-fill');
+  ring.style.strokeDasharray = `${RING_LEN}`;
+  ring.style.strokeDashoffset = `${RING_LEN * (1 - filled)}`;
+  document.getElementById('ring-note').textContent =
+    cal.status === 'over' ? '오늘 권장량을 넘었어요' : `남은 권장량 ${formatNumber(cal.remaining ?? cal.target)} kcal`;
+
+  document.getElementById('nutrient-bars').innerHTML = MAIN_NUTRIENTS.map((k) => barHtml(judged[k], day.missing[k])).join('');
+  document.getElementById('nutrient-bars-more').innerHTML = ['sat_fat', 'trans_fat', 'cholesterol']
+    .map((k) => barHtml(judged[k], day.missing[k]))
+    .join('');
+  // 일부 음식만 값이 비어 합계가 실제보다 적을 수 있을 때 안내
+  const partly = NUTRIENT_FIELDS.some((f) => day.missing[f.key] && day.totals[f.key] !== null);
+  document.getElementById('summary-missing').hidden = !partly;
+}
+
+// ---------- 영양 균형 카드 ----------
+
+// 캐릭터 표정은 섭취량이 아니라 '오늘 기록한 끼니' 기준 (CLAUDE.md 8장: 적게 먹었다고 보상하지 않음)
+function buddyExpression(meals) {
+  if (meals.length === 0) return 'expr-default';
+  const kinds = new Set(meals.map((m) => m.meal));
+  if (['breakfast', 'lunch', 'dinner'].every((k) => kinds.has(k))) return 'expr-satisfied';
+  return 'expr-excited';
+}
+
+function setBuddy(expr) {
+  document.getElementById('buddy-img').src = `assets/character/${expr}.png`;
+}
+
+function renderBalance(day, judged) {
+  const card = document.getElementById('balance-card');
+  card.classList.remove('grade-good', 'grade-mild', 'grade-bad', 'grade-empty');
+  const lines = document.getElementById('balance-lines');
+  const tip = document.getElementById('balance-tip');
+  setBuddy(buddyExpression(day.meals));
+
+  if (day.itemCount === 0) {
+    card.classList.add('grade-empty');
+    document.getElementById('balance-title').textContent = '오늘의 영양 균형';
+    lines.innerHTML = '<p>아직 기록이 없어요. 먹은 걸 기록하면 영양 균형을 알려드릴게요.</p>';
+    tip.textContent = '';
+    return null;
+  }
+  const grade = balanceGrade(judged);
+  const msg = balanceMessages(judged);
+  card.classList.add(`grade-${grade}`);
+  document.getElementById('balance-title').textContent = `오늘의 영양 균형: ${BALANCE_GRADES[grade]}`;
+  lines.innerHTML = msg.lines.map((l) => `<p>${l}</p>`).join('');
+  tip.textContent = msg.tip;
+  return msg;
+}
+
+// 끼니 저장 직후: 냠냠 표정 + 균형 한 줄 요약 말풍선을 잠깐 보여준다 (5장·8장)
+let buddyTimer = null;
+function showSavedReaction(msg, meals) {
+  const bubble = document.getElementById('buddy-bubble');
+  setBuddy('expr-yum');
+  bubble.textContent = msg ? msg.oneLine : '기록했어요!';
+  bubble.hidden = false;
+  clearTimeout(buddyTimer);
+  buddyTimer = setTimeout(() => {
+    bubble.hidden = true;
+    setBuddy(buddyExpression(meals));
+  }, 5000);
+}
+
+// 오늘 화면. opts.justSaved면 저장 직후 반응을 보여준다
+function renderToday(opts = {}) {
   const profile = loadProfile();
   if (!profile) return openMe();
   document.body.classList.remove('first-run');
   const today = toDateStr();
   document.getElementById('today-date').textContent = formatFullDate(today);
-  document.getElementById('today-calories').textContent = formatNumber(calcDailyCalories(profile));
+
+  const day = sumDay(today);
+  const judged = judgeNutrients(day.totals, getTargets(profile));
+  renderSummary(day, judged);
+  const msg = renderBalance(day, judged);
+  if (opts.justSaved) showSavedReaction(msg, day.meals);
+  else {
+    clearTimeout(buddyTimer);
+    document.getElementById('buddy-bubble').hidden = true;
+  }
+
   renderMealList(today);
   showScreen('screen-today');
 }
@@ -124,7 +257,7 @@ function onMealListClick(e) {
     closeMealMenus();
     if (!confirm('이 끼니를 지울까요? 담긴 음식도 함께 지워져요.')) return;
     deleteMeal(id);
-    renderMealList(toDateStr());
+    renderToday(); // 요약·균형 카드도 함께 갱신
     showToast('끼니를 지웠어요.');
   }
 }
@@ -137,8 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   initRecordScreen({
     // 저장·삭제·뒤로 후 모두 오늘 화면으로 돌아온다
-    onDone(message) {
-      renderToday();
+    onDone(message, opts = {}) {
+      renderToday({ justSaved: Boolean(opts.saved) });
       if (message) showToast(message);
     },
   });
