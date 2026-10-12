@@ -16,13 +16,14 @@ const GEMINI_SCHEMA = {
         type: 'OBJECT',
         properties: {
           name: { type: 'STRING' },
+          name_guessed: { type: 'BOOLEAN' }, // 성분표에 제품명이 없어 보이는 글자로 추정한 이름인지
           basis_type: { type: 'STRING', enum: BASIS_TYPES },
           basis_amount_g: NUM_OR_NULL,
           total_amount_g: NUM_OR_NULL,
           confidence: { type: 'NUMBER' },
           ...Object.fromEntries(NUTRIENT_KEYS.map((k) => [k, NUM_OR_NULL])),
         },
-        required: ['name', 'basis_type', 'confidence', ...NUTRIENT_KEYS],
+        required: ['name', 'name_guessed', 'basis_type', 'confidence', ...NUTRIENT_KEYS],
       },
     },
   },
@@ -47,14 +48,17 @@ function buildGeminiPrompt(forcedKind) {
 2) kind가 "label"이면:
 - 표에 인쇄된 숫자를 그대로 읽는다. 절대 추정하거나 계산해서 채우지 않는다.
 - 읽을 수 없거나 표에 없는 항목은 null. 0으로 채우지 않는다.
-- name: 사진에 제품명이 보이면 제품명, 안 보이면 빈 문자열 "".
+- name: 사진에 제품명이 보이면 그 제품명 (name_guessed: false).
+  제품명이 안 보이면(성분표는 보통 포장 뒷면) 원재료명·브랜드·제조사·총 내용량 등 보이는 글자로 어떤 음식인지 짧게 추정한다
+  (예: 원재료에 면·스프·건더기 → "컵라면", 밥·김·참치마요 → "삼각김밥"). 이때 name_guessed: true.
+  추정도 어려우면 빈 문자열 "" (name_guessed: false).
 - basis_type: 표의 기준이 "총 내용량당"이면 "total", "100g당"(100ml당 포함)이면 "per_100g", "1회 제공량당"이면 "per_serving".
 - basis_amount_g: 표의 기준량(g 또는 ml). 100g당이면 100. 모르면 null.
 - total_amount_g: 총 내용량(g 또는 ml). 모르면 null.
 - items는 보통 1개.
 
 3) kind가 "food"이면:
-- 어떤 음식인지 한국어 이름을 붙인다 (예: "삼각김밥(참치마요)", "컵라면(매운맛)").
+- 어떤 음식인지 한국어 이름을 붙인다 (예: "삼각김밥(참치마요)", "컵라면(매운맛)"). name_guessed는 false.
 - 일반적인 1인분 기준으로 영양성분을 추정한다. basis_type은 "estimate", basis_amount_g와 total_amount_g는 null.
 - 한 사진에 음식이 여러 개면 items를 나눈다.
 
@@ -118,8 +122,11 @@ function normalizeAnalysis(raw, forcedKind) {
       if (basisType === 'per_100g') basisAmount = 100;
       if (basisType === 'total') basisAmount = totalAmount || basisAmount;
       const conf = typeof it.confidence === 'number' && Number.isFinite(it.confidence) ? Math.min(Math.max(it.confidence, 0), 1) : 0.5;
+      const name = typeof it.name === 'string' ? it.name.trim().slice(0, 40) : '';
       return {
-        name: typeof it.name === 'string' ? it.name.trim().slice(0, 40) : '',
+        name,
+        // 성분표에서 보이는 글자로 추정한 이름 → 화면에 '(추정)' 표시 (6장). 음식 사진은 원래 추정이라 따로 표시 안 함
+        nameGuessed: kind === 'label' && it.name_guessed === true && name !== '',
         basisType,
         basisAmount: basisType === 'estimate' ? null : basisAmount,
         totalAmount: basisType === 'estimate' ? null : totalAmount,

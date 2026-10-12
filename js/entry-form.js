@@ -128,6 +128,7 @@ function openFoodEditor(prefill = {}) {
   // 채워진 선택 영양성분이 있으면 접힌 칸을 펼쳐서 확인할 수 있게
   form.querySelector('.more-nutrients').open = hasOptional;
   foodMeta = { source: prefill.source || 'manual', basis: prefill.basis || '직접 입력한 값' };
+  renderNameChips();
   updateAddRow();
   updateFoodState();
 }
@@ -146,6 +147,7 @@ function commitFoodForm() {
   if (existing) {
     existing.touched = true;
     existing.name = name;
+    existing.nameGuessed = false; // 사용자가 입력칸에서 확인한 이름
     existing.base = base;
     existing.nutrients = scaleNutrients(base, existing.multiplier);
   } else {
@@ -210,7 +212,7 @@ function basketRowHtml(it) {
   const src = INPUT_SOURCES[it.source] || INPUT_SOURCES.manual;
   const btn = (m, label) =>
     `<button type="button" class="amount-btn${mode === m ? ' on' : ''}" data-action="amount" data-mode="${m}" aria-pressed="${mode === m}">${label}</button>`;
-  const name = it.name ? escapeHtml(it.name) : '<em>이름을 입력해 주세요</em>';
+  const name = !it.name ? '<em>이름을 입력해 주세요</em>' : it.nameGuessed ? `${escapeHtml(it.name)}? <small class="guess">(추정)</small>` : escapeHtml(it.name);
   // 사진에서 온 음식은 어떤 기준의 값인지 함께 보여준다 (100g당 · 예상 등)
   const basis = it.source === 'label' || it.source === 'photo' ? `<small class="basket-basis">${escapeHtml(it.basis)}</small>` : '';
   const classes = ['basket-item', it.id === editingItemId ? 'editing' : '', needsInput(it) ? 'needs-input' : '', it.amountError ? 'invalid' : ''].filter(Boolean).join(' ');
@@ -390,6 +392,44 @@ function addRecentFood(food) {
   renderBasket();
   renderRecentList(); // 방금 담은 음식은 '담김'으로
 }
+// ---------- 이름 빠른 선택 칩 (6장: 성분표에 제품명이 없을 때 한 번 터치로) ----------
+
+// 고정 4개 + 최근 먹은 음식 이름 (고정 이름과 겹치면 빼고)
+function quickNames() {
+  const names = QUICK_NAMES.slice();
+  for (const f of getRecentFoods()) {
+    if (names.length >= QUICK_NAMES.length + QUICK_NAMES_RECENT) break;
+    if (!names.some((n) => nameKey(n) === nameKey(f.name))) names.push(f.name);
+  }
+  return names;
+}
+
+/** 칩 버튼들. attrs: 각 버튼에 붙일 data 속성 문자열 (어디서 눌렸는지 구분) */
+function nameChipsHtml(attrs, current = '') {
+  return quickNames()
+    .map((n) => {
+      const on = current && nameKey(current) === nameKey(n);
+      return `<button type="button" class="name-chip${on ? ' on' : ''}" ${attrs} data-quick-name="${escapeHtml(n)}">${escapeHtml(n)}</button>`;
+    })
+    .join('');
+}
+
+// 입력칸의 음식명 아래 칩
+function renderNameChips() {
+  document.getElementById('name-chips').innerHTML = nameChipsHtml('data-chip="editor"', foodForm().foodName.value);
+}
+
+// 분석 카드의 칩으로 이름 바꾸기 — 그 사진에서 담긴 음식을 찾아 이름만 바꾼다 (값은 그대로)
+function renameItemFromPhoto(photoId, index, name) {
+  if (!draft) return false;
+  const item = draft.items.find((it) => it.photoId === photoId && it.photoIndex === index);
+  if (!item) return false;
+  item.name = name;
+  item.nameGuessed = false;
+  if (editingItemId === item.id) foodForm().foodName.value = name;
+  renderBasket();
+  return true;
+}
 // ---------- 사진 분석 결과 담기 (photo.js가 부른다) ----------
 
 // 저장되는 basis 문구 — 사람이 읽는 문장으로 (CLAUDE.md 9장 basis)
@@ -421,6 +461,7 @@ function addAnalyzedItems(photoId, kind, analyzed) {
       totalAmount: a.totalAmount,
       photoId,
       photoIndex: index,
+      nameGuessed: Boolean(a.nameGuessed),
       base: { ...a.nutrients },
       customOpen: false,
       customUnit: undefined,
@@ -614,7 +655,17 @@ function initRecordScreen(callbacks) {
   renderMealOptions();
 
   const form = foodForm();
-  form.addEventListener('input', updateFoodState);
+  form.addEventListener('input', (e) => {
+    updateFoodState();
+    if (e.target.name === 'foodName') renderNameChips(); // 입력한 이름과 같은 칩 강조
+  });
+  document.getElementById('name-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-quick-name]');
+    if (!chip) return;
+    form.foodName.value = chip.dataset.quickName;
+    renderNameChips();
+    updateFoodState();
+  });
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     commitFoodForm();

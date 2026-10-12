@@ -2525,3 +2525,40 @@ button.cal-cell:hover:not(:disabled) {
     grid-column: 2;
   }
 }
+/* ---------- 이름 빠른 선택 칩 · (추정) 표시 (6장) ---------- */
+.name-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 6px 0 2px;
+}
+
+.name-chips:empty {
+  display: none;
+}
+
+.name-chip {
+  padding: 4px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--green-dark);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.name-chip:hover {
+  border-color: var(--green);
+}
+
+.name-chip.on {
+  border-color: var(--green);
+  background: var(--green-soft);
+  font-weight: 700;
+}
+
+.guess {
+  color: #b86f12;
+  font-weight: 700;
+  font-size: 0.78em;
+}

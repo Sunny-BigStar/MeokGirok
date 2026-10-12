@@ -124,12 +124,24 @@ function analyzedItemHtml(p, item, i) {
     superseded: '<span class="item-status dup">성분표 값으로 바뀌었어요</span>',
   };
   const statusText = STATUS[status] || '';
-  const name = item.name ? escapeHtml(item.name) : '<em class="need">제품명이 안 보여요 · 담긴 음식에서 이름을 입력해 주세요</em>';
+  // 제품명이 없으면 Gemini가 보이는 글자로 추정한 이름에 '(추정)' (6장). 추정도 못 했으면 안내
+  const name = !item.name
+    ? '<em class="need">제품명이 안 보여요 · 아래에서 고르거나 직접 입력해 주세요</em>'
+    : item.nameGuessed
+      ? `${escapeHtml(item.name)}? <small class="guess">(추정)</small>`
+      : escapeHtml(item.name);
+  // 성분표 카드는 이름 아래에 항상 빠른 선택 칩 — 끼니에 담긴 음식일 때만 (눌러서 그 음식 이름을 바꿈)
+  const inBasketNow = status === 'added' || status === 'replaced';
+  const chips =
+    p.kind === 'label' && inBasketNow
+      ? `<div class="name-chips">${nameChipsHtml(`data-action="rename" data-photo="${p.id}" data-index="${i}"`, item.nameGuessed ? '' : item.name)}</div>`
+      : '';
   const basis = estimated ? '예상 · 일반적인 1인분 기준 · 참고용' : basisText(item);
   const low = item.confidence < LOW_CONFIDENCE ? '<span class="low-conf">확신 낮음 · 꼭 확인해 주세요</span>' : '';
   return `
     <div class="analyzed-item">
       <div class="analyzed-head"><strong>${name}</strong>${statusText}</div>
+      ${chips}
       <p class="analyzed-basis">${basis} ${low}</p>
       ${nutrientTableHtml(item, estimated)}
     </div>`;
@@ -187,7 +199,15 @@ function onPhotoCardClick(e) {
   const photo = photos.find((p) => p.id === btn.dataset.photo);
   if (!photo) return;
   const action = btn.dataset.action;
-  if (action === 'retry') {
+  if (action === 'rename') {
+    // 칩으로 이름 확정: 담긴 음식 이름을 바꾸고 카드에도 반영 ('(추정)' 표시 없어짐)
+    const index = Number(btn.dataset.index);
+    if (renameItemFromPhoto(photo.id, index, btn.dataset.quickName)) {
+      photo.items[index].name = btn.dataset.quickName;
+      photo.items[index].nameGuessed = false;
+      renderPhotoCards();
+    }
+  } else if (action === 'retry') {
     runAnalysis(photo);
   } else if (action === 'switch') {
     removeItemsFromPhoto(photo.id);

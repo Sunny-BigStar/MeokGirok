@@ -150,6 +150,10 @@ const GROWTH_STAGES = [
   { days: 30, label: '열매', img: 'stage5-fruit', grow: '열매가 열려요' },
 ];
 
+// 이름 빠른 선택 칩 (성분표에 제품명이 없을 때 한 번 터치로 이름 바꾸기, 6장) — 고정 4개 + 최근 먹은 음식 이름 몇 개
+const QUICK_NAMES = ['컵라면', '삼각김밥', '김밥', '도시락'];
+const QUICK_NAMES_RECENT = 4;
+
 // 최근 음식 다시 담기: 최근 30일 안에 자주 먹은 순(같으면 최근 순)으로 최대 10개
 const RECENT_FOODS = { limit: 10, days: 30 };
 
