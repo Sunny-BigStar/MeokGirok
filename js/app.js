@@ -238,7 +238,7 @@ function renderToday(opts = {}) {
   }
 
   renderMealList(date);
-  if (calendarOpen()) renderCalendar(date); // 기록이 바뀌었으면 점도 갱신
+  syncCalendar(date); // 캘린더는 항상 보이므로 매번 같이 그린다 (기록 점·선택 날짜)
   if (currentScreen() !== 'screen-today') showScreen('screen-today');
 }
 
@@ -321,10 +321,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('date-prev').addEventListener('click', () => renderToday({ date: shiftDate(viewDate, -1) }));
   document.getElementById('date-next').addEventListener('click', () => renderToday({ date: shiftDate(viewDate, 1) }));
   document.getElementById('go-today').addEventListener('click', () => renderToday({ date: toDateStr() }));
-  initCalendar(
-    () => viewDate || toDateStr(),
-    (date) => renderToday({ date })
-  );
+  // 캘린더에서 날짜를 고르면 화면 전체가 그날 기준으로 바뀐다.
+  // 모바일에선 캘린더가 맨 아래라 바뀐 요약이 안 보이므로 위로 올려 준다 (데스크톱은 옆의 식사 기록이 바로 바뀌므로 그대로)
+  initCalendar((date) => {
+    renderToday({ date });
+    if (window.matchMedia('(max-width: 899px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
   // 목록 항목마다 리스너를 달지 않고 목록 하나에서 받는다 (다시 그려도 유지됨)
   document.getElementById('meal-list').addEventListener('click', onMealListClick);

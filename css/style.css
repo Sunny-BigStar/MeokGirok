@@ -2080,3 +2080,53 @@ button.cal-cell:hover:not(:disabled) {
     margin-right: auto;
   }
 }
+/* 6단계 수정: 캘린더 항상 표시 — 데스크톱은 식사 기록 오른쪽, 모바일은 식사 기록 아래 (CLAUDE.md 4-1) */
+.today-lower {
+  display: grid;
+  gap: 0;
+}
+
+.today-lower .calendar {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.date-bar .date-title {
+  margin: 0;
+  padding: 4px 6px;
+  font-size: 1.15rem;
+}
+
+.cal-legend .cal-sel,
+.cal-legend .cal-today {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  vertical-align: -1px;
+}
+
+.cal-legend .cal-sel {
+  background: var(--green);
+}
+
+.cal-legend .cal-today {
+  box-shadow: inset 0 0 0 1.5px var(--green);
+}
+
+.cal-legend {
+  flex-wrap: wrap;
+}
+
+@media (min-width: 900px) {
+  .today-lower {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .cal-cell {
+    max-height: 40px;
+  }
+}

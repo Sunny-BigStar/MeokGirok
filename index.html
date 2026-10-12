@@ -35,28 +35,14 @@
 
       <!-- 화면 1: 오늘 (날짜 이동·캘린더는 6단계) -->
       <section id="screen-today" class="screen" hidden>
-        <!-- 날짜 이동 ‹ › + 날짜를 누르면 월간 캘린더 (6단계). 연속 기록 배지는 7단계 -->
+        <!-- 날짜 이동 ‹ › (연속 기록 배지는 7단계). 캘린더는 아래 식사 기록 옆에 항상 펼쳐져 있다 -->
         <div class="date-bar">
           <button id="date-prev" type="button" class="icon-btn" data-icon="back" aria-label="전날"></button>
-          <button id="date-toggle" type="button" class="date-toggle" aria-expanded="false" aria-controls="calendar">
-            <span id="today-date" class="date-title"></span>
-            <span class="date-hint">날짜를 눌러 캘린더 보기</span>
-          </button>
+          <h1 id="today-date" class="date-title"></h1>
           <button id="date-next" type="button" class="icon-btn flip" data-icon="back" aria-label="다음 날"></button>
         </div>
         <div class="date-actions">
           <button id="go-today" type="button" class="btn-small" hidden>오늘로</button>
-        </div>
-
-        <div id="calendar" class="card calendar" hidden>
-          <div class="cal-head">
-            <button id="cal-prev" type="button" class="icon-btn" data-icon="back" aria-label="이전 달"></button>
-            <strong id="cal-title"></strong>
-            <button id="cal-next" type="button" class="icon-btn flip" data-icon="back" aria-label="다음 달"></button>
-          </div>
-          <div class="cal-weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
-          <div id="cal-grid" class="cal-grid"></div>
-          <p class="cal-legend"><span class="cal-dot"></span>기록한 날 · 날짜를 누르면 그날 기록을 보여드려요</p>
         </div>
 
         <!-- 오늘의 영양 요약: 왼쪽 원형 링(열량) + 오른쪽 영양소 막대 5줄 (CLAUDE.md 4-1, 5장) -->
@@ -98,13 +84,28 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-head">
-            <h2 id="meals-title">오늘의 식사 기록</h2>
-            <button id="add-meal" type="button" class="btn-small" data-icon="plus"><span>식사 추가</span></button>
+        <!-- 식사 기록 + 월간 캘린더: 데스크톱은 나란히(캘린더 오른쪽), 모바일은 식사 기록 아래 (CLAUDE.md 4-1) -->
+        <div class="today-lower">
+          <div class="card meals-card">
+            <div class="card-head">
+              <h2 id="meals-title">오늘의 식사 기록</h2>
+              <button id="add-meal" type="button" class="btn-small" data-icon="plus"><span>식사 추가</span></button>
+            </div>
+            <ul id="meal-list" class="meal-list"></ul>
+            <p id="today-empty" class="empty">아직 기록이 없어요. 먹은 걸 가볍게 남겨 보세요.</p>
           </div>
-          <ul id="meal-list" class="meal-list"></ul>
-          <p id="today-empty" class="empty">아직 기록이 없어요. 먹은 걸 가볍게 남겨 보세요.</p>
+
+          <!-- 월간 캘린더: 항상 펼쳐 둔다 (접기 없음). 날짜를 누르면 화면 전체가 그날 기준으로 -->
+          <div id="calendar" class="card calendar">
+            <div class="cal-head">
+              <button id="cal-prev" type="button" class="icon-btn" data-icon="back" aria-label="이전 달"></button>
+              <strong id="cal-title"></strong>
+              <button id="cal-next" type="button" class="icon-btn flip" data-icon="back" aria-label="다음 달"></button>
+            </div>
+            <div class="cal-weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+            <div id="cal-grid" class="cal-grid"></div>
+            <p class="cal-legend"><span class="cal-dot"></span>기록한 날 · <span class="cal-sel"></span>보고 있는 날 · <span class="cal-today"></span>오늘</p>
+          </div>
         </div>
       </section>
 

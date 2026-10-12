@@ -1,4 +1,4 @@
-// 월간 캘린더 — 오늘 화면 안에서 펼쳐진다 (별도 화면 없음, CLAUDE.md 4-1)
+// 월간 캘린더 — 오늘 화면에 항상 펼쳐져 있다 (별도 화면·접기 없음, CLAUDE.md 4-1)
 // 기록한 날은 entries에서 계산한다 (따로 저장하지 않음, 9장)
 
 let calMonth = null; // 지금 보고 있는 달 { year, month(0~11) }
@@ -35,10 +35,6 @@ function recordedDates() {
   );
 }
 
-function calendarOpen() {
-  return !document.getElementById('calendar').hidden;
-}
-
 function renderCalendar(selected) {
   const { year, month } = calMonth;
   const now = new Date();
@@ -60,38 +56,34 @@ function renderCalendar(selected) {
     .join('');
 }
 
-function openCalendar(selected) {
-  const [y, m] = selected.split('-').map(Number);
-  calMonth = { year: y, month: m - 1 }; // 처음 열면 고른 날짜가 있는 달
-  document.getElementById('calendar').hidden = false;
-  document.getElementById('date-toggle').setAttribute('aria-expanded', 'true');
+/**
+ * 오늘 화면을 그릴 때마다 부른다 — 캘린더는 항상 펼쳐져 있다 (CLAUDE.md 4-1, 접기 없음).
+ * 보는 날짜가 바뀌면 그 날짜가 있는 달로 맞추고, 같은 날짜면 사용자가 넘겨 둔 달을 유지한다.
+ */
+let calSelected = null;
+function syncCalendar(selected) {
+  if (!calMonth || selected !== calSelected) {
+    const [y, m] = selected.split('-').map(Number);
+    calMonth = { year: y, month: m - 1 };
+  }
+  calSelected = selected;
   renderCalendar(selected);
 }
 
-function closeCalendar() {
-  document.getElementById('calendar').hidden = true;
-  document.getElementById('date-toggle').setAttribute('aria-expanded', 'false');
-}
-
-function shiftMonth(delta, selected) {
+function shiftMonth(delta) {
   const d = new Date(calMonth.year, calMonth.month + delta, 1);
   calMonth = { year: d.getFullYear(), month: d.getMonth() };
-  renderCalendar(selected);
+  renderCalendar(calSelected);
 }
 
-/** getSelected: 지금 고른 날짜를 돌려주는 함수, onPick(date): 날짜를 골랐을 때 */
-function initCalendar(getSelected, onPick) {
+/** onPick(date): 날짜를 골랐을 때 (화면 전체를 그 날짜로) */
+function initCalendar(onPick) {
   onPickDate = onPick;
-  document.getElementById('date-toggle').addEventListener('click', () => {
-    if (calendarOpen()) closeCalendar();
-    else openCalendar(getSelected());
-  });
-  document.getElementById('cal-prev').addEventListener('click', () => shiftMonth(-1, getSelected()));
-  document.getElementById('cal-next').addEventListener('click', () => shiftMonth(1, getSelected()));
+  document.getElementById('cal-prev').addEventListener('click', () => shiftMonth(-1));
+  document.getElementById('cal-next').addEventListener('click', () => shiftMonth(1));
   document.getElementById('cal-grid').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-date]');
     if (!btn || btn.disabled) return;
-    closeCalendar(); // 고르면 접는다 — 아래 요약·기록을 바로 보이게
     onPickDate(btn.dataset.date);
   });
 }
