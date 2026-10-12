@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   entries: 'meokgirok.entries',
   apiKey: 'meokgirok.apiKey',
   dismissed: 'meokgirok.dismissed',
+  favorites: 'meokgirok.favorites', // 자주 먹는 세트 (사용자 요청으로 추가, CLAUDE.md 9장)
 };
 
 // 활동계수 (Mifflin-St Jeor 결과에 곱함)

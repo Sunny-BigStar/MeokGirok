@@ -13,6 +13,7 @@ function buildBackup(now = new Date()) {
     profile: loadProfile(),
     entries: loadEntries(),
     dismissed: loadDismissed(),
+    favorites: loadFavorites(), // 자주 먹는 세트도 함께 옮긴다
   };
 }
 
@@ -89,6 +90,19 @@ function cleanItem(it, where) {
   };
 }
 
+// 자주 먹는 세트: 이름·식사 종류·음식(이름·열량 필수)만 받고 나머지는 버린다
+function cleanFavorite(f, i) {
+  const where = `${i + 1}번째 세트`;
+  if (!f || typeof f !== 'object' || typeof f.name !== 'string' || !f.name.trim()) throw new BackupError(`${where}의 이름이 없어요.`);
+  const meals = Array.isArray(f.meals) ? f.meals.filter((k) => MEAL_TYPES.some((t) => t.key === k)) : [];
+  if (!meals.length || !Array.isArray(f.items) || !f.items.length) throw new BackupError(`${where} '${f.name}'의 식사 종류나 음식이 없어요.`);
+  const items = f.items.map((it) => {
+    const c = cleanItem({ ...it, multiplier: 1 }, where); // 음식 검사는 기록과 같은 규칙
+    return { name: c.name, basis: c.basis, nutrients: c.nutrients };
+  });
+  return { id: safeId(f.id), name: f.name.trim().slice(0, 20), meals, items };
+}
+
 function cleanMeal(m, i) {
   const where = `${i + 1}번째 끼니`;
   if (!m || typeof m !== 'object') throw new BackupError(`${where}의 정보가 올바르지 않아요.`);
@@ -128,7 +142,9 @@ function parseBackup(text) {
     const dismissed = (Array.isArray(obj.dismissed) ? obj.dismissed : [])
       .filter((d) => d && isValidDate(d.date) && MAIN_MEALS.includes(d.meal))
       .map((d) => ({ date: d.date, meal: d.meal }));
-    return { ok: true, data: { profile, entries, dismissed } };
+    // 세트가 없는 예전 백업이면 지금 세트를 그대로 둔다 (undefined)
+    const favorites = Array.isArray(obj.favorites) ? obj.favorites.map(cleanFavorite) : undefined;
+    return { ok: true, data: { profile, entries, dismissed, favorites } };
   } catch (e) {
     if (e instanceof BackupError) return { ok: false, error: e.message };
     return { ok: false, error: '파일 내용을 읽지 못했어요.' };
@@ -140,6 +156,7 @@ function applyBackup(data) {
   if (data.profile) saveProfile(data.profile); // 파일에 프로필이 없으면 지금 프로필 유지
   saveEntries(data.entries, { force: true }); // 사용자가 확인한 '바꾸기'라 읽지 못한 기록이 있어도 덮어쓴다
   localStorage.setItem(STORAGE_KEYS.dismissed, JSON.stringify(data.dismissed));
+  if (data.favorites) saveFavorites(data.favorites);
 }
 
 // 전체 초기화: 기록·내 정보·알림 설정·API 키 모두

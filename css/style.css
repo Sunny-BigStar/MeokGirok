@@ -2287,3 +2287,241 @@ button.cal-cell:hover:not(:disabled) {
   color: #8a3b2c;
   font-size: 0.9rem;
 }
+/* ---------- 자주 먹는 세트 ---------- */
+/* 기록하기: "이걸 드셨나요?" 제안 */
+.fav-suggest {
+  margin: 4px 0 14px;
+  padding: 12px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1.5px dashed var(--green);
+}
+
+.fav-set + .fav-set,
+.fav-set + .fav-label {
+  margin-top: 10px;
+}
+
+.fav-ask {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b86f12;
+}
+
+.fav-set-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fav-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fav-text strong {
+  font-size: 0.95rem;
+  color: var(--green-dark);
+}
+
+.fav-text small {
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.fav-label {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green-dark);
+}
+
+.fav-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fav-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 7px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--card-soft);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.fav-chip small {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.fav-chip:hover:not(:disabled) {
+  border-color: var(--green);
+}
+
+.fav-chip.done,
+.fav-chip:disabled {
+  background: var(--green-soft);
+  border-color: var(--green-soft);
+  color: var(--green-dark);
+  cursor: default;
+}
+
+.fav-suggest .note {
+  margin-top: 8px;
+  font-size: 0.72rem;
+}
+
+/* 내 정보: 세트 목록·만들기 */
+.fav-card .note {
+  margin-top: -6px;
+  margin-bottom: 10px;
+}
+
+.fav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.fav-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.fav-meals {
+  margin-left: 4px;
+  color: var(--brown) !important;
+  font-weight: 600;
+}
+
+.fav-row-actions {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.fav-card #fav-msg:empty {
+  display: none;
+}
+
+.fav-card .hint {
+  color: var(--green-dark);
+}
+
+.fav-form #fav-hint {
+  color: var(--brown);
+}
+
+.fav-meals-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fav-meals-pick label {
+  position: relative;
+}
+
+.fav-meals-pick input {
+  position: absolute;
+  opacity: 0;
+}
+
+.fav-meals-pick span {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.fav-meals-pick input:checked + span {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+}
+
+.fav-meals-pick input:focus-visible + span {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
+.fav-items {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+}
+
+.fav-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.fav-item-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.fav-item-main > input {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.fav-item-main > input:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.fav-item .input-unit input {
+  padding: 9px 8px;
+}
+
+.fav-item .more-nutrients {
+  margin: 6px 0 0;
+}
+
+.fav-item .more-nutrients > summary {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+@media (max-width: 420px) {
+  .fav-item-main {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .fav-item-main .input-unit {
+    grid-column: 1 / 2;
+  }
+
+  .fav-item-main .remove-btn {
+    grid-row: 1;
+    grid-column: 2;
+  }
+}

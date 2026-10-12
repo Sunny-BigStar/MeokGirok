@@ -235,6 +235,7 @@ function renderBasket() {
   document.getElementById('basket-list').innerHTML = items.map(basketRowHtml).join('');
   document.getElementById('basket-empty').hidden = items.length > 0;
   updateBasketTotals();
+  renderFavSuggest(); // 담긴 세트는 '담김'으로
 }
 
 // 합계만 다시 그린다 (직접 입력 칸에 타이핑하는 중에 목록 전체를 다시 그리면 커서가 사라지므로)
@@ -638,6 +639,9 @@ function initRecordScreen(callbacks) {
   ['meal-options', 'meal-date', 'meal-time'].forEach((id) => {
     document.getElementById(id).addEventListener('change', updateSaveState);
   });
+  // 식사 종류를 바꾸면 그 끼니의 자주 먹는 세트를 보여준다
+  document.getElementById('meal-options').addEventListener('change', renderFavSuggest);
+  initFavSuggest();
 
   const list = document.getElementById('basket-list');
   list.addEventListener('click', onBasketClick);

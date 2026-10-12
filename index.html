@@ -168,6 +168,8 @@
                 <legend>식사 종류</legend>
                 <div id="meal-options" class="meal-options"></div>
               </fieldset>
+              <!-- 자주 먹는 세트: 고른 식사 종류의 세트를 "이걸 드셨나요?"로 보여주고 누르면 담기 -->
+              <div id="fav-suggest" class="fav-suggest" hidden></div>
               <div class="two-col">
                 <label>날짜
                   <span class="input-unit"><input id="meal-date" type="date" /></span>
@@ -317,6 +319,35 @@
           <button id="me-save" type="submit" class="btn-primary" disabled>저장하고 시작하기</button>
         </form>
 
+        <!-- 자주 먹는 세트: 만들기·고치기·지우기 (기본으로 아침 세트·점심/저녁 음식 4개가 들어 있음) -->
+        <div id="fav-card" class="card fav-card">
+          <h2>자주 먹는 세트</h2>
+          <p class="note">자주 먹는 조합을 저장해 두면, 기록하기에서 그 식사 종류를 고를 때 바로 보여드려요.</p>
+          <ul id="fav-list" class="fav-list"></ul>
+          <p id="fav-empty" class="empty" hidden>저장된 세트가 없어요.</p>
+          <p id="fav-msg" class="hint" role="status"></p>
+          <button id="fav-add" type="button" class="btn-dashed" data-icon="plus"><span>세트 만들기</span></button>
+          <form id="fav-form" class="food-editor fav-form" novalidate hidden>
+            <p id="fav-form-title" class="editor-title">새 세트 만들기</p>
+            <div class="field">
+              <label for="favName">세트 이름</label>
+              <div class="input-unit"><input id="favName" name="favName" type="text" maxlength="20" placeholder="예: 아침 세트" autocomplete="off" /></div>
+            </div>
+            <fieldset class="field">
+              <legend>언제 보여줄까요? <small class="optional">(여러 개 고를 수 있어요)</small></legend>
+              <div id="fav-meals" class="fav-meals-pick"></div>
+            </fieldset>
+            <p class="setting-label">담긴 음식 <small>(이름·열량은 꼭, 나머지는 선택)</small></p>
+            <ul id="fav-items" class="fav-items"></ul>
+            <button id="fav-add-item" type="button" class="link-btn">+ 음식 추가</button>
+            <p id="fav-hint" class="hint"></p>
+            <div class="editor-actions">
+              <button id="fav-save" type="submit" class="btn-secondary" disabled>세트 저장</button>
+              <button id="fav-cancel" type="button" class="link-btn">취소</button>
+            </div>
+          </form>
+        </div>
+
         <!-- 앱 설정 (시안에 없음, 아래쪽에 작게): Gemini API 키 · 데이터 내보내기/가져오기 · 전체 초기화 -->
         <div id="app-settings" class="card app-settings">
           <h2>앱 설정</h2>
@@ -358,6 +389,7 @@
   <script src="js/calendar.js"></script>
   <script src="js/habit.js"></script>
   <script src="js/backup.js"></script>
+  <script src="js/favorites.js"></script>
   <script src="js/gemini.js"></script>
   <script src="js/entry-form.js"></script>
   <script src="js/photo.js"></script>

@@ -104,6 +104,8 @@ function fillMeForm(profile) {
   // 앱 설정은 첫 실행에도 보인다 — 새 기기에서 백업 파일부터 가져올 수 있게 (8단계에서 바꿈)
   renderApiKeyCard();
   document.getElementById('data-msg').textContent = '';
+  closeFavEditor();
+  renderFavManager();
   updateMePreview();
 }
 
@@ -183,6 +185,7 @@ function initDataSection(callbacks) {
 
 function initMeScreen(onSaved, dataCallbacks) {
   initApiKeyCard();
+  initFavManager();
   initDataSection(dataCallbacks);
   renderActivityOptions();
   const form = meForm();
