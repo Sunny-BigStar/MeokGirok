@@ -147,14 +147,7 @@ function renderSummary(day, judged, isToday) {
 
 // ---------- 영양 균형 카드 ----------
 
-// 캐릭터 표정은 섭취량이 아니라 '오늘 기록한 끼니' 기준 (CLAUDE.md 8장: 적게 먹었다고 보상하지 않음)
-function buddyExpression(meals) {
-  if (meals.length === 0) return 'expr-default';
-  const kinds = new Set(meals.map((m) => m.meal));
-  if (['breakfast', 'lunch', 'dinner'].every((k) => kinds.has(k))) return 'expr-satisfied';
-  return 'expr-excited';
-}
-
+// 캐릭터 표정·말은 섭취량이 아니라 '기록한 끼니' 기준 (habit.js, CLAUDE.md 8장: 적게 먹었다고 보상하지 않음)
 function setBuddy(expr) {
   document.getElementById('buddy-img').src = `assets/character/${expr}.png`;
 }
@@ -164,7 +157,6 @@ function renderBalance(day, judged, isToday, dayLabel) {
   card.classList.remove('grade-good', 'grade-mild', 'grade-bad', 'grade-empty');
   const lines = document.getElementById('balance-lines');
   const tip = document.getElementById('balance-tip');
-  setBuddy(buddyExpression(day.meals));
 
   if (day.itemCount === 0) {
     card.classList.add('grade-empty');
@@ -185,18 +177,78 @@ function renderBalance(day, judged, isToday, dayLabel) {
   return msg;
 }
 
-// 끼니 저장 직후: 냠냠 표정 + 균형 한 줄 요약 말풍선을 잠깐 보여준다 (5장·8장)
+// 끼니 저장 직후: 냠냠 표정 + '습관 반응 + 균형 한 줄 요약' 말풍선을 5초 보여주고 평소 상태로 (5장·8장)
 let buddyTimer = null;
-function showSavedReaction(msg, meals) {
+function showSavedReaction(msg, buddy) {
   const bubble = document.getElementById('buddy-bubble');
   setBuddy('expr-yum');
-  bubble.textContent = msg ? msg.oneLine : '기록했어요!';
+  bubble.textContent = msg ? `${buddy.message}\n${msg.oneLine}` : buddy.message;
   bubble.hidden = false;
   clearTimeout(buddyTimer);
   buddyTimer = setTimeout(() => {
-    bubble.hidden = true;
-    setBuddy(buddyExpression(meals));
+    bubble.textContent = buddy.message;
+    setBuddy(buddy.expression);
   }, 5000);
+}
+
+// ---------- 식사 알림 · 연속 기록 · 성장 단계 (7단계) ----------
+
+function renderReminders(missed) {
+  const card = document.getElementById('reminder-card');
+  card.hidden = missed.length === 0;
+  // 비난·죄책감 없이: "아직 기록 전인가요?" (8장 예시 문구)
+  document.getElementById('reminder-list').innerHTML = missed
+    .map((k) => {
+      const label = mealLabel(k);
+      return `
+      <li class="reminder-item">
+        <p><strong>${label}을 기록하지 않았어요.</strong> 아직 기록 전인가요? 깜빡했다면 지금 입력해 보세요.</p>
+        <div class="reminder-actions">
+          <button type="button" class="btn-small" data-remind="record" data-meal="${k}">${label} 기록하기</button>
+          <button type="button" class="chip-btn" data-remind="dismiss" data-meal="${k}">오늘은 안 먹었어요</button>
+        </div>
+      </li>`;
+    })
+    .join('');
+}
+
+// 배지(연속)와 성장 띠(누적)는 보고 있는 날짜와 상관없이 '지금' 기준
+function renderGrowth() {
+  const recorded = recordedDates();
+  const total = [...recorded].filter((d) => !isFuture(d)).length;
+  const streak = streakDays(recorded);
+  const badge = document.getElementById('streak-badge');
+  badge.hidden = streak === 0;
+  badge.textContent = `🔥 ${streak}일 연속 기록 중`;
+  document.getElementById('growth-streak').textContent = streak > 0 ? `🔥 ${streak}일 연속 기록 중` : '오늘 기록하면 연속 기록이 시작돼요';
+
+  const g = growthStage(total);
+  document.getElementById('growth-stages').innerHTML = GROWTH_STAGES.map((s, i) => {
+    const state = i === g.index ? 'current' : i < g.index ? 'done' : 'locked';
+    return `
+      <li class="stage ${state}" ${state === 'current' ? 'aria-current="step"' : ''}>
+        <img src="assets/character/${s.img}.png" alt="" />
+        <span>${s.label}</span>
+        <small>${s.days}일</small>
+      </li>`;
+  }).join('');
+  document.getElementById('growth-text').textContent = growthText(total);
+}
+
+function onReminderClick(e) {
+  const btn = e.target.closest('[data-remind]');
+  if (!btn) return;
+  const meal = btn.dataset.meal;
+  const today = toDateStr();
+  if (btn.dataset.remind === 'record') {
+    // 식사 종류를 채워서 기록하기 열기 (8장). 시간은 그 끼니의 대표 시간
+    openEntryForm({ meal, date: today, time: MEAL_DEFAULT_TIMES[meal] });
+  } else {
+    // 날짜·끼니만 저장 — 섭취 기록으로 남기지 않는다
+    dismissMeal(today, meal);
+    renderToday();
+    showToast(`알겠어요. 오늘 ${mealLabel(meal)} 알림은 숨길게요.`);
+  }
 }
 
 // 오늘 화면에서 보고 있는 날짜 (저장하지 않음 — 앱을 새로 열면 항상 오늘)
@@ -230,12 +282,20 @@ function renderToday(opts = {}) {
   const judged = judgeNutrients(day.totals, getTargets(profile));
   renderSummary(day, judged, isToday);
   const msg = renderBalance(day, judged, isToday, dayLabel);
+
+  // 캐릭터: 오늘이면 놓친 끼니 알림(놀람) > 습관 상태, 말풍선은 오늘만 항상 보임
+  const habit = habitState(day.meals);
+  const missed = isToday ? missedMeals(day.meals, loadDismissed()) : [];
+  const buddy = { expression: missed.length ? 'expr-surprised' : habit.expression, message: habit.message };
+  renderReminders(missed);
+  clearTimeout(buddyTimer);
+  const bubble = document.getElementById('buddy-bubble');
+  bubble.hidden = !isToday;
+  bubble.textContent = buddy.message;
+  setBuddy(buddy.expression);
   // 냠냠 반응은 오늘 기록일 때만 (지난날 기록은 '오늘의 기록 습관'이 아니므로)
-  if (opts.justSaved && isToday) showSavedReaction(msg, day.meals);
-  else {
-    clearTimeout(buddyTimer);
-    document.getElementById('buddy-bubble').hidden = true;
-  }
+  if (opts.justSaved && isToday) showSavedReaction(msg, buddy);
+  renderGrowth();
 
   renderMealList(date);
   syncCalendar(date); // 캘린더는 항상 보이므로 매번 같이 그린다 (기록 점·선택 날짜)
@@ -330,6 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 목록 항목마다 리스너를 달지 않고 목록 하나에서 받는다 (다시 그려도 유지됨)
   document.getElementById('meal-list').addEventListener('click', onMealListClick);
+  document.getElementById('reminder-list').addEventListener('click', onReminderClick);
   // 메뉴 밖을 누르면 열린 ⋯ 메뉴를 닫는다
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.meal-more')) closeMealMenus();

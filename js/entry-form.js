@@ -508,7 +508,13 @@ function askMerge(text) {
       const btn = e.target.closest('button[data-choice]');
       if (btn) done(btn.dataset.choice);
     };
-    const onClose = () => done('cancel'); // Esc 키 등으로 닫힌 경우
+    // Esc 키 등으로 닫힌 경우만 취소로 본다.
+    // 이전 창을 닫을 때 생긴 close 이벤트가 늦게 도착하면 지금 열린 창을 '취소'로 닫아 버리므로,
+    // 이벤트가 왔을 때 창이 아직 열려 있으면(= 이전 창의 늦은 이벤트) 무시한다
+    const onClose = () => {
+      if (dialog.open) return;
+      done('cancel');
+    };
     dialog.addEventListener('click', onClick);
     dialog.addEventListener('close', onClose);
   });

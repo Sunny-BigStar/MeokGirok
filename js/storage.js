@@ -72,6 +72,24 @@ function deleteApiKey() {
   localStorage.removeItem(STORAGE_KEYS.apiKey);
 }
 
+// '오늘은 안 먹었어요'로 숨긴 식사 알림: [{ date, meal }]만 저장 (섭취 기록으로 남기지 않음, 8장)
+function loadDismissed() {
+  try {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEYS.dismissed) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function dismissMeal(date, meal, now = new Date()) {
+  const cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() - DISMISSED_KEEP_DAYS);
+  const cutoffStr = toDateStr(cutoff);
+  const list = loadDismissed().filter((d) => d.date >= cutoffStr && !(d.date === date && d.meal === meal));
+  list.push({ date, meal });
+  localStorage.setItem(STORAGE_KEYS.dismissed, JSON.stringify(list));
+}
+
 function saveEntries(entries) {
   localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(entries));
 }

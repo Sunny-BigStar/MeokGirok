@@ -119,6 +119,36 @@ const NEXT_MEAL_TIPS = {
   none: '지금처럼 골고루 챙겨 먹어요.',
 };
 
+// ---------- 캐릭터 · 식사 알림 · 성장 (CLAUDE.md 8장) ----------
+// 캐릭터는 '기록 습관'에만 반응한다 — 먹은 양으로 칭찬하거나 시무룩해지지 않는다
+const MAIN_MEALS = ['breakfast', 'lunch', 'dinner']; // 알림·'세 끼 모두'는 이 셋만
+const HABIT_MESSAGES = {
+  none: '배고파요… 오늘 첫 기록을 기다리는 중',
+  breakfast: '든든하게 시작했어요!',
+  lunch: '점심도 챙겼네요',
+  dinner: '저녁까지 챙겼네요',
+  snack: '간식도 잊지 않고 기록했어요',
+  drink: '음료도 잊지 않고 기록했어요',
+  late_night: '야식도 잊지 않고 기록했어요',
+  etc: '오늘도 차곡차곡 기록하고 있어요.',
+  allThree: '오늘 세 끼 모두 기록 완료! 🎉',
+};
+
+// 식사 알림의 '○○ 기록하기'로 열 때 채울 시간 (지금 시각이면 아침 기록이 오후 시간으로 들어가므로)
+const MEAL_DEFAULT_TIMES = { breakfast: '08:00', lunch: '12:30', dinner: '18:30' };
+
+// '오늘은 안 먹었어요' 기록은 이보다 오래되면 지운다 (계속 쌓이지 않게)
+const DISMISSED_KEEP_DAYS = 30;
+
+// 성장 단계: 기록한 날 수 '누적' (하루 빠져도 내려가지 않음, 사용자 결정 2026-10-12)
+const GROWTH_STAGES = [
+  { days: 1, label: '씨앗', img: 'stage1-seed', grow: '씨앗이 생겨요' },
+  { days: 3, label: '새싹', img: 'stage2-sprout', grow: '새싹이 돋아요' },
+  { days: 7, label: '잎', img: 'stage3-leaf', grow: '잎이 자라요' },
+  { days: 14, label: '꽃', img: 'stage4-flower', grow: '꽃이 펴요' },
+  { days: 30, label: '열매', img: 'stage5-fruit', grow: '열매가 열려요' },
+];
+
 // 최근 음식 다시 담기: 최근 30일 안에 자주 먹은 순(같으면 최근 순)으로 최대 10개
 const RECENT_FOODS = { limit: 10, days: 30 };
 

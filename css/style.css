@@ -2130,3 +2130,156 @@ button.cal-cell:hover:not(:disabled) {
     max-height: 40px;
   }
 }
+/* ---------- 7단계: 캐릭터 말풍선 · 식사 알림 · 연속 기록 · 성장 단계 ---------- */
+.buddy-bubble {
+  white-space: pre-line; /* 저장 직후 '습관 반응\n균형 요약' 두 줄 */
+}
+
+.date-actions {
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #fff1df;
+  color: #b86f12;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+/* 식사 알림: 놀람 표정과 함께, 비난하지 않는 부드러운 톤 */
+.reminder-card {
+  background: #fffaf2;
+  border: 1.5px dashed #f6d3a5;
+}
+
+.reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.reminder-item + .reminder-item {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.reminder-item p {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+}
+
+.reminder-item strong {
+  color: #b86f12;
+}
+
+.reminder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 성장 단계 띠: 페이지 아래 작게 */
+.growth-card {
+  padding: 16px 18px;
+}
+
+.growth-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.growth-head img {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.growth-head h2 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.growth-streak {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #b86f12;
+  font-weight: 700;
+}
+
+.growth-stages {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 2px;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.stage img {
+  width: 100%;
+  max-width: 56px;
+  aspect-ratio: 1;
+  object-fit: contain;
+}
+
+.stage span {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.stage small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* 지금 단계 강조, 지난 단계는 그대로, 아직 안 온 단계는 흐리게 */
+.stage.current {
+  background: var(--green-soft);
+  box-shadow: inset 0 0 0 1.5px var(--green);
+}
+
+.stage.current span {
+  color: var(--green-dark);
+}
+
+.stage.locked img {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+.stage.locked span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.growth-text {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--green-dark);
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .stage img {
+    max-width: 64px;
+  }
+}
