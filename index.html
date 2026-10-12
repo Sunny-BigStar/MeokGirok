@@ -273,7 +273,7 @@
 
         <form id="me-form" novalidate>
           <div class="me-grid">
-            <div class="card">
+            <div class="card basic-card">
               <h2>기본 정보</h2>
               <div class="form-row">
                 <span class="row-label">성별</span>
@@ -307,6 +307,10 @@
                 <label class="row-label" for="activity">활동량</label>
                 <select id="activity" name="activity"></select>
               </div>
+              <!-- 저장 버튼은 기본 정보 카드 안 맨 아래 (아래 카드와 붙지 않게) -->
+              <div class="me-save-row">
+                <button id="me-save" type="submit" class="btn-primary" disabled>저장하고 시작하기</button>
+              </div>
             </div>
 
             <div class="card standards">
@@ -317,8 +321,6 @@
               <p class="note">참고용 · 일반적인 계산식(Mifflin-St Jeor)과 식약처 1일 영양성분 기준치 기준이에요. 개인의 건강 상태에 따라 차이가 있을 수 있어요.</p>
             </div>
           </div>
-
-          <button id="me-save" type="submit" class="btn-primary" disabled>저장하고 시작하기</button>
         </form>
 
         <!-- 자주 먹는 세트: 만들기·고치기·지우기 (기본으로 아침 세트·점심/저녁 음식 4개가 들어 있음) -->

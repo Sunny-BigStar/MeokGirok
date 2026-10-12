@@ -2716,3 +2716,81 @@ button.cal-cell:hover:not(:disabled) {
   outline: none;
   box-shadow: 0 0 0 3px var(--green-soft);
 }
+/* ---------- 내 정보 정렬 (사용자 요청) ----------
+   ① 저장 버튼은 기본 정보 카드 안 맨 아래 ② 다섯 줄 간격을 똑같이 ③ 두 카드 높이 맞추기 */
+.me-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px; /* 아래 '자주 먹는 세트' 카드와 간격 */
+}
+
+.me-grid > .card {
+  margin-bottom: 0;
+}
+
+.basic-card,
+.me-grid > .standards {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 줄 간격 통일: 칸 높이를 모두 44px로, 빈 안내 문구는 자리를 차지하지 않게 */
+.basic-card .form-row {
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.basic-card .row-label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-top: 0;
+}
+
+.basic-card .input-unit input,
+.basic-card select {
+  height: 44px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.basic-card .segmented span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 4px;
+}
+
+.basic-card .hint:empty {
+  display: none;
+}
+
+/* 저장 버튼: 카드 맨 아래에 붙여 두 카드 높이가 같아도 버튼은 항상 바닥에 */
+.me-save-row {
+  margin-top: auto;
+  padding-top: 8px;
+}
+
+.me-save-row #me-save {
+  width: 100%;
+  margin: 0;
+}
+
+/* 나의 영양 기준: 안내 문구를 카드 바닥에 */
+.me-grid > .standards .note {
+  margin-top: auto;
+  padding-top: 10px;
+}
+
+@media (min-width: 900px) {
+  .me-grid {
+    align-items: stretch; /* 두 카드 높이 맞추기 */
+  }
+
+  .me-save-row #me-save {
+    width: 100%;
+    margin-left: 0;
+    padding: 14px;
+  }
+}
