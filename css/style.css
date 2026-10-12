@@ -2562,3 +2562,101 @@ button.cal-cell:hover:not(:disabled) {
   font-weight: 700;
   font-size: 0.78em;
 }
+/* 균형 카드 좌우 바꿈: 왼쪽 말풍선+캐릭터, 오른쪽 글씨 (사용자 요청)
+   말풍선을 캐릭터 칸 안으로 옮겨 카드 위쪽에 빈 줄이 생기지 않게 한다 */
+.balance-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.balance-buddy {
+  width: auto;
+  max-width: 170px;
+  justify-content: center;
+}
+
+.balance-card > .balance-buddy .buddy-bubble {
+  grid-column: auto;
+  justify-self: auto;
+  align-self: center;
+  max-width: 170px;
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* 꼬리는 가운데 아래 → 바로 밑의 캐릭터를 가리킴 */
+.balance-card > .balance-buddy .buddy-bubble::after {
+  left: 50%;
+  right: auto;
+  margin-left: -6px;
+}
+
+.balance-text h2 {
+  margin-top: 0;
+}
+
+/* 좁은 화면: 캐릭터 칸을 조금 줄여 글씨 칸을 넓게 */
+@media (max-width: 480px) {
+  .balance-card {
+    gap: 10px;
+  }
+
+  .balance-buddy,
+  .balance-card > .balance-buddy .buddy-bubble {
+    max-width: 118px;
+  }
+
+  .balance-buddy img {
+    width: 76px;
+  }
+
+  .balance-card > .balance-buddy .buddy-bubble {
+    font-size: 0.75rem;
+    padding: 6px 8px;
+  }
+}
+/* 말풍선 줄바꿈은 낱말 단위로 ("완\n료!"처럼 낱말 중간에서 끊기지 않게), 데스크톱은 조금 넓게 */
+.bubble {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 900px) {
+  .balance-buddy,
+  .balance-card > .balance-buddy .buddy-bubble {
+    max-width: 220px;
+  }
+}
+/* 좁은 화면(휴대폰·작은 창): 캐릭터 칸을 더 줄여 글씨 칸 확보 — 480px 기준은 500px 근처 창에서 안 걸려 600px로 */
+@media (max-width: 600px) {
+  .balance-card {
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .balance-buddy,
+  .balance-card > .balance-buddy .buddy-bubble {
+    max-width: 104px;
+  }
+
+  .balance-buddy img {
+    width: 68px;
+  }
+
+  .balance-card > .balance-buddy .buddy-bubble {
+    font-size: 0.72rem;
+    padding: 6px 8px;
+  }
+
+  .balance-card h2 {
+    font-size: 0.98rem;
+  }
+}
+/* 균형 카드 글씨도 낱말 단위 줄바꿈 ("약간 불\n균형" 방지) */
+.balance-text {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

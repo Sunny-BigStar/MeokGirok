@@ -75,15 +75,16 @@
 
         <!-- 오늘의 영양 균형: 등급 + 무엇이 과하고 부족한지 + 다음 끼니 제안 + 캐릭터 (표정은 기록 습관 기준, 8장) -->
         <div id="balance-card" class="card balance-card">
-          <!-- 저장 직후 말풍선: 카드 위쪽 전체 폭 (캐릭터 칸 위에 띄우면 좁은 화면에서 제목을 가림) -->
-          <p id="buddy-bubble" class="bubble buddy-bubble" role="status" hidden></p>
+          <!-- 왼쪽: 말풍선 + 캐릭터를 한 칸에 (말풍선이 카드 위쪽 전체를 차지해 제목 위가 비지 않게) -->
+          <div class="balance-buddy">
+            <p id="buddy-bubble" class="bubble buddy-bubble" role="status" hidden></p>
+            <img id="buddy-img" src="assets/character/expr-default.png" alt="" />
+          </div>
+          <!-- 오른쪽: 균형 등급·문구·다음 끼니 제안 -->
           <div class="balance-text">
             <h2 id="balance-title">오늘의 영양 균형</h2>
             <div id="balance-lines"></div>
             <p id="balance-tip" class="balance-tip"></p>
-          </div>
-          <div class="balance-buddy">
-            <img id="buddy-img" src="assets/character/expr-default.png" alt="" />
           </div>
         </div>
 
