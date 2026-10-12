@@ -21,7 +21,7 @@ function currentScreen() {
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 
-// "2026년 10월 12일 (일)" — 날짜 이동(‹ ›)과 캘린더는 6단계
+// "2026년 10월 12일 (일)"
 function formatFullDate(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const day = WEEKDAYS[new Date(y, m - 1, d).getDay()];
@@ -121,7 +121,7 @@ function barHtml(r, missing) {
 
 const RING_LEN = 2 * Math.PI * 52; // 원 둘레 (r=52)
 
-function renderSummary(day, judged) {
+function renderSummary(day, judged, isToday) {
   const cal = judged.calories;
   document.getElementById('ring-value').textContent = formatNumber(cal.value === null ? 0 : cal.value);
   document.getElementById('ring-target').textContent = formatNumber(cal.target);
@@ -130,8 +130,11 @@ function renderSummary(day, judged) {
   const ring = document.getElementById('ring-fill');
   ring.style.strokeDasharray = `${RING_LEN}`;
   ring.style.strokeDashoffset = `${RING_LEN * (1 - filled)}`;
-  document.getElementById('ring-note').textContent =
-    cal.status === 'over' ? '오늘 권장량을 넘었어요' : `남은 권장량 ${formatNumber(cal.remaining ?? cal.target)} kcal`;
+  // 지난날엔 '남은 권장량'이 의미 없으므로 권장량 대비 비율로 보여준다
+  let note;
+  if (isToday) note = cal.status === 'over' ? '오늘 권장량을 넘었어요' : `남은 권장량 ${formatNumber(cal.remaining ?? cal.target)} kcal`;
+  else note = cal.status === 'over' ? '그날 권장량을 넘었어요' : `그날 권장량의 ${Math.round((cal.pct || 0) * 100)}%`;
+  document.getElementById('ring-note').textContent = note;
 
   document.getElementById('nutrient-bars').innerHTML = MAIN_NUTRIENTS.map((k) => barHtml(judged[k], day.missing[k])).join('');
   document.getElementById('nutrient-bars-more').innerHTML = ['sat_fat', 'trans_fat', 'cholesterol']
@@ -156,7 +159,7 @@ function setBuddy(expr) {
   document.getElementById('buddy-img').src = `assets/character/${expr}.png`;
 }
 
-function renderBalance(day, judged) {
+function renderBalance(day, judged, isToday, dayLabel) {
   const card = document.getElementById('balance-card');
   card.classList.remove('grade-good', 'grade-mild', 'grade-bad', 'grade-empty');
   const lines = document.getElementById('balance-lines');
@@ -165,17 +168,20 @@ function renderBalance(day, judged) {
 
   if (day.itemCount === 0) {
     card.classList.add('grade-empty');
-    document.getElementById('balance-title').textContent = '오늘의 영양 균형';
-    lines.innerHTML = '<p>아직 기록이 없어요. 먹은 걸 기록하면 영양 균형을 알려드릴게요.</p>';
+    document.getElementById('balance-title').textContent = `${dayLabel} 영양 균형`;
+    lines.innerHTML = isToday
+      ? '<p>아직 기록이 없어요. 먹은 걸 기록하면 영양 균형을 알려드릴게요.</p>'
+      : '<p>이 날은 기록이 없어요.</p>';
     tip.textContent = '';
     return null;
   }
   const grade = balanceGrade(judged);
   const msg = balanceMessages(judged);
   card.classList.add(`grade-${grade}`);
-  document.getElementById('balance-title').textContent = `오늘의 영양 균형: ${BALANCE_GRADES[grade]}`;
+  document.getElementById('balance-title').textContent = `${dayLabel} 영양 균형: ${BALANCE_GRADES[grade]}`;
   lines.innerHTML = msg.lines.map((l) => `<p>${l}</p>`).join('');
-  tip.textContent = msg.tip;
+  // 지난날에 '다음 끼니'를 제안하는 건 맞지 않아 오늘만 보여준다
+  tip.textContent = isToday ? msg.tip : '';
   return msg;
 }
 
@@ -193,26 +199,47 @@ function showSavedReaction(msg, meals) {
   }, 5000);
 }
 
-// 오늘 화면. opts.justSaved면 저장 직후 반응을 보여준다
+// 오늘 화면에서 보고 있는 날짜 (저장하지 않음 — 앱을 새로 열면 항상 오늘)
+let viewDate = null;
+
+/**
+ * 오늘 화면 = 고른 날짜의 요약·균형·식사 기록 (6단계: 지난날도 같은 화면에서).
+ * opts.date: 보여줄 날짜(없으면 보던 날짜), opts.justSaved: 저장 직후 반응
+ */
 function renderToday(opts = {}) {
   const profile = loadProfile();
   if (!profile) return openMe();
   document.body.classList.remove('first-run');
   const today = toDateStr();
-  document.getElementById('today-date').textContent = formatFullDate(today);
+  let date = opts.date || viewDate || today;
+  if (isFuture(date)) date = today;
+  viewDate = date;
+  const isToday = date === today;
+  const dayLabel = isToday ? '오늘의' : formatMonthDay(date);
 
-  const day = sumDay(today);
+  document.getElementById('today-date').textContent = formatFullDate(date);
+  document.getElementById('date-next').disabled = isToday; // 미래로는 못 감
+  document.getElementById('go-today').hidden = isToday;
+  document.getElementById('summary-title').textContent = `${dayLabel} 영양 요약`;
+  document.getElementById('meals-title').textContent = `${dayLabel} 식사 기록`;
+  document.getElementById('today-empty').textContent = isToday
+    ? '아직 기록이 없어요. 먹은 걸 가볍게 남겨 보세요.'
+    : '이 날은 기록이 없어요. 깜빡했다면 지금 남겨도 괜찮아요.';
+
+  const day = sumDay(date);
   const judged = judgeNutrients(day.totals, getTargets(profile));
-  renderSummary(day, judged);
-  const msg = renderBalance(day, judged);
-  if (opts.justSaved) showSavedReaction(msg, day.meals);
+  renderSummary(day, judged, isToday);
+  const msg = renderBalance(day, judged, isToday, dayLabel);
+  // 냠냠 반응은 오늘 기록일 때만 (지난날 기록은 '오늘의 기록 습관'이 아니므로)
+  if (opts.justSaved && isToday) showSavedReaction(msg, day.meals);
   else {
     clearTimeout(buddyTimer);
     document.getElementById('buddy-bubble').hidden = true;
   }
 
-  renderMealList(today);
-  showScreen('screen-today');
+  renderMealList(date);
+  if (calendarOpen()) renderCalendar(date); // 기록이 바뀌었으면 점도 갱신
+  if (currentScreen() !== 'screen-today') showScreen('screen-today');
 }
 
 let toastTimer = null;
@@ -234,11 +261,15 @@ function openMe() {
 // 메뉴 이동. 기록하기에서 저장 안 한 내용이 있으면 먼저 확인
 function navigate(target) {
   const from = currentScreen();
-  if (from === `screen-${target}`) return;
+  if (from === `screen-${target}`) {
+    // 지난날을 보다가 '오늘' 탭을 누르면 오늘로
+    if (target === 'today') renderToday({ date: toDateStr() });
+    return;
+  }
   if (from === 'screen-record' && !confirmLeaveRecord()) return;
   if (target === 'me') openMe();
   else if (target === 'record') openEntryForm();
-  else renderToday();
+  else renderToday({ date: toDateStr() }); // '오늘' 탭은 항상 오늘로
 }
 
 function onMealListClick(e) {
@@ -271,8 +302,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initPhotoUpload();
   initRecordScreen({
     // 저장·삭제·뒤로 후 모두 오늘 화면으로 돌아온다
+    // 저장한 끼니의 날짜로 돌아온다 (지난날에 기록했으면 그 날짜 화면)
     onDone(message, opts = {}) {
-      renderToday({ justSaved: Boolean(opts.saved) });
+      renderToday({ justSaved: Boolean(opts.saved), date: opts.date });
       if (message) showToast(message);
     },
   });
@@ -282,7 +314,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const nav = e.target.closest('[data-nav]');
     if (nav) navigate(nav.dataset.nav);
   });
-  document.getElementById('add-meal').addEventListener('click', () => navigate('record'));
+  // 보고 있는 날짜로 기록하기를 연다 (지난날을 보다가 누르면 그 날짜로). 하단 탭 '기록하기'는 항상 오늘
+  document.getElementById('add-meal').addEventListener('click', () => openEntryForm({ date: viewDate }));
+
+  // 날짜 이동 ‹ › · 오늘로 · 캘린더
+  document.getElementById('date-prev').addEventListener('click', () => renderToday({ date: shiftDate(viewDate, -1) }));
+  document.getElementById('date-next').addEventListener('click', () => renderToday({ date: shiftDate(viewDate, 1) }));
+  document.getElementById('go-today').addEventListener('click', () => renderToday({ date: toDateStr() }));
+  initCalendar(
+    () => viewDate || toDateStr(),
+    (date) => renderToday({ date })
+  );
 
   // 목록 항목마다 리스너를 달지 않고 목록 하나에서 받는다 (다시 그려도 유지됨)
   document.getElementById('meal-list').addEventListener('click', onMealListClick);

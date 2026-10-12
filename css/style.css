@@ -1919,3 +1919,164 @@ select:focus {
   display: block;
   margin: 4px auto 0;
 }
+/* ---------- 6단계: 날짜 이동 · 월간 캘린더 ---------- */
+.date-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.icon-btn.flip .icon {
+  transform: scaleX(-1); /* ‹ 아이콘을 뒤집어 › 로 */
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  background: transparent;
+}
+
+.date-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  cursor: pointer;
+}
+
+.date-toggle:hover,
+.date-toggle[aria-expanded='true'] {
+  background: var(--green-soft);
+}
+
+.date-toggle .date-title {
+  font-family: var(--font-title);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--green-dark);
+}
+
+.date-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.date-actions {
+  display: flex;
+  justify-content: center;
+  min-height: 8px;
+  margin: 2px 0 8px;
+}
+
+.calendar {
+  padding: 14px 16px;
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cal-head strong {
+  color: var(--green-dark);
+}
+
+.cal-weekdays,
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  text-align: center;
+}
+
+.cal-weekdays span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.cal-weekdays span:first-child {
+  color: var(--brown);
+}
+
+.cal-cell {
+  position: relative;
+  aspect-ratio: 1;
+  max-height: 46px;
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.cal-cell.empty {
+  cursor: default;
+}
+
+button.cal-cell:hover:not(:disabled) {
+  background: var(--green-soft);
+}
+
+.cal-cell:disabled {
+  color: #cfc6b8;
+  cursor: default;
+}
+
+/* 기록한 날: 숫자 아래 초록 점. 기록 안 한 날은 표시 없음 (빈칸을 강조해 압박하지 않기, 7장) */
+.cal-cell.recorded::after,
+.cal-dot {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.cal-cell.recorded::after {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  margin-left: -3px;
+}
+
+.cal-cell.today {
+  box-shadow: inset 0 0 0 1.5px var(--green);
+  font-weight: 700;
+}
+
+.cal-cell.selected {
+  background: var(--green);
+  color: #fff;
+  font-weight: 700;
+}
+
+.cal-cell.selected.recorded::after {
+  background: #fff;
+}
+
+.cal-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+@media (min-width: 900px) {
+  .calendar {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

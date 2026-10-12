@@ -35,11 +35,33 @@
 
       <!-- 화면 1: 오늘 (날짜 이동·캘린더는 6단계) -->
       <section id="screen-today" class="screen" hidden>
-        <h1 id="today-date" class="date-title"></h1>
+        <!-- 날짜 이동 ‹ › + 날짜를 누르면 월간 캘린더 (6단계). 연속 기록 배지는 7단계 -->
+        <div class="date-bar">
+          <button id="date-prev" type="button" class="icon-btn" data-icon="back" aria-label="전날"></button>
+          <button id="date-toggle" type="button" class="date-toggle" aria-expanded="false" aria-controls="calendar">
+            <span id="today-date" class="date-title"></span>
+            <span class="date-hint">날짜를 눌러 캘린더 보기</span>
+          </button>
+          <button id="date-next" type="button" class="icon-btn flip" data-icon="back" aria-label="다음 날"></button>
+        </div>
+        <div class="date-actions">
+          <button id="go-today" type="button" class="btn-small" hidden>오늘로</button>
+        </div>
+
+        <div id="calendar" class="card calendar" hidden>
+          <div class="cal-head">
+            <button id="cal-prev" type="button" class="icon-btn" data-icon="back" aria-label="이전 달"></button>
+            <strong id="cal-title"></strong>
+            <button id="cal-next" type="button" class="icon-btn flip" data-icon="back" aria-label="다음 달"></button>
+          </div>
+          <div class="cal-weekdays" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+          <div id="cal-grid" class="cal-grid"></div>
+          <p class="cal-legend"><span class="cal-dot"></span>기록한 날 · 날짜를 누르면 그날 기록을 보여드려요</p>
+        </div>
 
         <!-- 오늘의 영양 요약: 왼쪽 원형 링(열량) + 오른쪽 영양소 막대 5줄 (CLAUDE.md 4-1, 5장) -->
         <div class="card summary-card">
-          <h2>오늘의 영양 요약</h2>
+          <h2 id="summary-title">오늘의 영양 요약</h2>
           <div class="summary-body">
             <div class="ring-box">
               <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
@@ -78,7 +100,7 @@
 
         <div class="card">
           <div class="card-head">
-            <h2>오늘의 식사 기록</h2>
+            <h2 id="meals-title">오늘의 식사 기록</h2>
             <button id="add-meal" type="button" class="btn-small" data-icon="plus"><span>식사 추가</span></button>
           </div>
           <ul id="meal-list" class="meal-list"></ul>
@@ -298,6 +320,7 @@
   <script src="js/profile.js"></script>
   <script src="js/entries.js"></script>
   <script src="js/summary.js"></script>
+  <script src="js/calendar.js"></script>
   <script src="js/gemini.js"></script>
   <script src="js/entry-form.js"></script>
   <script src="js/photo.js"></script>

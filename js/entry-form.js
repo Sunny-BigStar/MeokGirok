@@ -539,7 +539,7 @@ async function saveMeal() {
       upsertMeal({ ...existing, items: existing.items.concat(items) });
       if (draft.isEdit) deleteMeal(draft.id);
       draft = null;
-      recordCallbacks.onDone(`${mealLabel(info.meal)} 끼니에 합쳤어요.`, { saved: true });
+      recordCallbacks.onDone(`${mealLabel(info.meal)} 끼니에 합쳤어요.`, { saved: true, date: info.date });
       return;
     }
     // 'separate'면 아래에서 따로 저장
@@ -548,7 +548,7 @@ async function saveMeal() {
   const isEdit = draft.isEdit;
   upsertMeal({ id: draft.id, date: info.date, time: info.time, meal: info.meal, items });
   draft = null;
-  recordCallbacks.onDone(isEdit ? '끼니를 고쳤어요.' : '끼니를 기록했어요.', { saved: true });
+  recordCallbacks.onDone(isEdit ? '끼니를 고쳤어요.' : '끼니를 기록했어요.', { saved: true, date: info.date });
 }
 
 // ---------- 화면 열기 ----------
@@ -640,8 +640,9 @@ function initRecordScreen(callbacks) {
   document.getElementById('meal-delete').addEventListener('click', () => {
     if (!confirm('이 끼니를 지울까요? 담긴 음식도 함께 지워져요.')) return;
     deleteMeal(draft.id);
+    const date = draft.original && draft.original.date; // 지운 끼니의 날짜 화면으로
     draft = null;
-    recordCallbacks.onDone('끼니를 지웠어요.');
+    recordCallbacks.onDone('끼니를 지웠어요.', { date });
   });
 
   document.getElementById('record-back').addEventListener('click', () => {
