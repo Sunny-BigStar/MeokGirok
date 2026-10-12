@@ -101,9 +101,9 @@ function fillMeForm(profile) {
   // 첫 실행이면 환영 문구와 '시작하기', 이후엔 그냥 '저장'
   document.getElementById('me-save').textContent = profile ? '저장' : '저장하고 시작하기';
   document.getElementById('me-welcome').hidden = Boolean(profile);
-  // 첫 실행에는 기본 정보에만 집중하도록 앱 설정은 숨긴다
-  document.getElementById('app-settings').hidden = !profile;
+  // 앱 설정은 첫 실행에도 보인다 — 새 기기에서 백업 파일부터 가져올 수 있게 (8단계에서 바꿈)
   renderApiKeyCard();
+  document.getElementById('data-msg').textContent = '';
   updateMePreview();
 }
 
@@ -144,8 +144,46 @@ function initApiKeyCard() {
   });
 }
 
-function initMeScreen(onSaved) {
+// ---------- 앱 설정: 데이터 내보내기·가져오기·전체 초기화 (8단계) ----------
+
+function setDataMsg(text) {
+  document.getElementById('data-msg').textContent = text;
+}
+
+async function onDataFile(e, callbacks) {
+  const file = e.target.files[0];
+  e.target.value = ''; // 같은 파일을 다시 골라도 동작하게
+  if (!file) return;
+  if (file.size > BACKUP_MAX_BYTES) return setDataMsg('파일이 너무 커요. 먹기록에서 내보낸 JSON 파일을 골라 주세요.');
+  const result = parseBackup(await file.text());
+  if (!result.ok) return setDataMsg(`가져오지 못했어요: ${result.error} 지금 데이터는 그대로예요.`);
+
+  // 바꾸기 전에 꼭 묻는다 (가져오기 = 지금 데이터를 파일 내용으로 바꾸기)
+  const now = loadEntries().length;
+  const next = result.data.entries.length;
+  const ok = confirm(`지금 기록 ${now}끼니를 파일의 ${next}끼니로 바꿀까요?\n지금 데이터는 사라져요. 걱정되면 먼저 내보내기를 해 두세요.`);
+  if (!ok) return setDataMsg('가져오기를 취소했어요. 지금 데이터는 그대로예요.');
+  applyBackup(result.data);
+  callbacks.onImported(`${next}끼니를 가져왔어요.${loadApiKey() ? '' : ' API 키는 파일에 없으니 사진 분석을 쓰려면 다시 입력해 주세요.'}`);
+}
+
+function initDataSection(callbacks) {
+  document.getElementById('data-export').addEventListener('click', () => {
+    downloadBackup();
+    setDataMsg(`${backupFileName()} 파일로 내보냈어요.`);
+  });
+  document.getElementById('data-import').addEventListener('click', () => document.getElementById('data-file').click());
+  document.getElementById('data-file').addEventListener('change', (e) => onDataFile(e, callbacks));
+  document.getElementById('data-reset').addEventListener('click', () => {
+    if (!confirm('기록·내 정보·알림 설정·API 키를 모두 지울까요?\n되돌릴 수 없어요. 필요하면 먼저 내보내기를 해 두세요.')) return;
+    resetAll();
+    callbacks.onReset();
+  });
+}
+
+function initMeScreen(onSaved, dataCallbacks) {
   initApiKeyCard();
+  initDataSection(dataCallbacks);
   renderActivityOptions();
   const form = meForm();
   form.addEventListener('input', updateMePreview);

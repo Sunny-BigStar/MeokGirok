@@ -355,10 +355,32 @@ function onMealListClick(e) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fillStaticIcons();
-  initMeScreen((isFirst) => {
-    renderToday();
-    showToast(isFirst ? '반가워요! 이제 먹은 걸 기록해 보세요.' : '내 정보를 저장했어요.');
-  });
+  initMeScreen(
+    (isFirst) => {
+      renderToday();
+      showToast(isFirst ? '반가워요! 이제 먹은 걸 기록해 보세요.' : '내 정보를 저장했어요.');
+    },
+    {
+      // 가져오기 후: 프로필이 있으면 오늘 화면에서 바로 확인, 없으면(기록만 든 파일 + 첫 실행) 내 정보 입력부터
+      onImported(message) {
+        viewDate = null;
+        if (loadProfile()) {
+          renderToday({ date: toDateStr() });
+          showToast(message);
+        } else {
+          openMe();
+          document.getElementById('data-msg').textContent = `${message} 이제 기본 정보를 입력해 주세요.`;
+        }
+      },
+      // 전체 초기화 후: 첫 실행 상태로 (내 정보 + 환영 문구, 메뉴 숨김)
+      onReset() {
+        viewDate = null;
+        document.body.classList.add('first-run');
+        openMe();
+        showToast('모든 데이터를 지웠어요.');
+      },
+    }
+  );
   initPhotoUpload();
   initRecordScreen({
     // 저장·삭제·뒤로 후 모두 오늘 화면으로 돌아온다

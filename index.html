@@ -315,7 +315,7 @@
           <button id="me-save" type="submit" class="btn-primary" disabled>저장하고 시작하기</button>
         </form>
 
-        <!-- 앱 설정 (시안에 없음, 아래쪽에 작게): Gemini API 키. JSON 내보내기·초기화는 8단계 -->
+        <!-- 앱 설정 (시안에 없음, 아래쪽에 작게): Gemini API 키 · 데이터 내보내기/가져오기 · 전체 초기화 -->
         <div id="app-settings" class="card app-settings">
           <h2>앱 설정</h2>
           <p class="setting-label">Gemini API 키 <small>(음식·성분표 사진 분석에만 필요해요)</small></p>
@@ -329,6 +329,19 @@
           </form>
           <p class="note">Google AI Studio(aistudio.google.com)에서 무료로 발급받을 수 있어요. 키는 이 기기에만 저장돼요.</p>
           <p id="key-msg" class="hint"></p>
+
+          <!-- 데이터: 기록이 이 기기에만 있으므로 파일로 옮기기 (8단계) -->
+          <div class="data-section">
+            <p class="setting-label">데이터</p>
+            <div class="data-actions">
+              <button id="data-export" type="button" class="chip-btn" data-icon="download"><span>JSON 내보내기</span></button>
+              <button id="data-import" type="button" class="chip-btn" data-icon="upload"><span>JSON 가져오기</span></button>
+            </div>
+            <input id="data-file" type="file" accept="application/json,.json" hidden />
+            <p class="note">기록은 이 기기에만 저장돼요. 기기를 바꾸기 전에 내보내 두세요. API 키는 파일에 넣지 않아요.</p>
+            <p id="data-msg" class="hint" role="status"></p>
+            <button id="data-reset" type="button" class="link-btn danger">전체 초기화</button>
+          </div>
         </div>
       </section>
     </main>
@@ -342,6 +355,7 @@
   <script src="js/summary.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/habit.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/gemini.js"></script>
   <script src="js/entry-form.js"></script>
   <script src="js/photo.js"></script>
