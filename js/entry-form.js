@@ -143,6 +143,7 @@ function commitFoodForm() {
   if (errors.length) return false;
   const existing = draft.items.find((it) => it.id === editingItemId);
   if (existing) {
+    existing.touched = true;
     existing.name = name;
     existing.base = base;
     existing.nutrients = scaleNutrients(base, existing.multiplier);
@@ -166,11 +167,41 @@ function startEditItem(id) {
 
 // ---------- 담긴 음식: 줄마다 먹은 양 [전체 | 1/2 | 직접 입력] + ✕ ----------
 
+// 성분표면 '전체' = 총 내용량 ÷ 표 기준량 (예: 100g당 · 총 120g → 1.2배). 모르면 1배
+function fullMultiplier(item) {
+  if (item.totalAmount && item.basisAmount) return roundTo(item.totalAmount / item.basisAmount, 3);
+  return 1;
+}
+
 function amountMode(item) {
   if (item.customOpen) return 'custom';
-  if (item.multiplier === 1) return 'full';
-  if (item.multiplier === 0.5) return 'half';
+  const full = fullMultiplier(item);
+  if (item.multiplier === full) return 'full';
+  if (item.multiplier === roundTo(full / 2, 3)) return 'half';
   return 'custom';
+}
+
+// g으로 직접 입력은 표 기준량(g)을 알 때만 가능 (g ÷ 기준량 = 배수)
+function canUseGrams(item) {
+  return Boolean(item.basisAmount);
+}
+
+// 이름이나 열량이 비어 있으면 저장 전에 채워야 한다 (성분표에 제품명이 없을 때 등)
+function needsInput(item) {
+  return !item.name || item.nutrients.calories === null;
+}
+
+function kcalText(v) {
+  return v === null ? '열량 입력 필요' : `${formatNumber(v)} kcal`;
+}
+
+function customAmountHtml(it) {
+  const unit = it.customUnit === 'g' && canUseGrams(it) ? 'g' : 'x';
+  const value = it.amountError ? '' : unit === 'g' ? Math.round(it.multiplier * it.basisAmount) : it.multiplier;
+  const unitBtn = (u, label) =>
+    `<button type="button" class="unit-btn${unit === u ? ' on' : ''}" data-action="unit" data-unit="${u}" aria-pressed="${unit === u}">${label}</button>`;
+  const units = canUseGrams(it) ? `<span class="unit-toggle">${unitBtn('x', '배')}${unitBtn('g', 'g')}</span>` : '<span>배</span>';
+  return `<div class="custom-amount"><input type="number" inputmode="decimal" min="0" step="any" value="${value}" data-action="custom-amount" aria-label="${unit === 'g' ? '먹은 양(g)' : '배수'}" />${units}</div>`;
 }
 
 function basketRowHtml(it) {
@@ -178,22 +209,23 @@ function basketRowHtml(it) {
   const src = INPUT_SOURCES[it.source] || INPUT_SOURCES.manual;
   const btn = (m, label) =>
     `<button type="button" class="amount-btn${mode === m ? ' on' : ''}" data-action="amount" data-mode="${m}" aria-pressed="${mode === m}">${label}</button>`;
+  const name = it.name ? escapeHtml(it.name) : '<em>이름을 입력해 주세요</em>';
+  // 사진에서 온 음식은 어떤 기준의 값인지 함께 보여준다 (100g당 · 예상 등)
+  const basis = it.source === 'label' || it.source === 'photo' ? `<small class="basket-basis">${escapeHtml(it.basis)}</small>` : '';
+  const classes = ['basket-item', it.id === editingItemId ? 'editing' : '', needsInput(it) ? 'needs-input' : '', it.amountError ? 'invalid' : ''].filter(Boolean).join(' ');
   return `
-    <li class="basket-item${it.id === editingItemId ? ' editing' : ''}" data-id="${it.id}">
+    <li class="${classes}" data-id="${it.id}">
       <span class="basket-icon" title="${src.label}">${iconSvg(src.icon)}</span>
       <button type="button" class="basket-name" data-action="edit-item" title="눌러서 고치기">
-        <strong>${escapeHtml(it.name)}</strong>
-        <span class="basket-kcal">${formatNumber(it.nutrients.calories)} kcal</span>
+        <strong>${name}</strong>
+        <span class="basket-kcal">${kcalText(it.nutrients.calories)}</span>
+        ${basis}
       </button>
       <span class="amount-group" role="group" aria-label="먹은 양">
         ${btn('full', '전체')}${btn('half', '1/2')}${btn('custom', '직접 입력')}
       </span>
       <button type="button" class="icon-btn remove-btn" data-action="remove-item" aria-label="빼기">${iconSvg('close')}</button>
-      ${
-        mode === 'custom'
-          ? `<label class="custom-amount"><input type="number" inputmode="decimal" min="0.1" max="10" step="any" value="${it.amountError ? '' : it.multiplier}" data-action="custom-amount" aria-label="배수" /><span>배</span></label>`
-          : ''
-      }
+      ${mode === 'custom' ? customAmountHtml(it) : ''}
     </li>`;
 }
 
@@ -209,7 +241,7 @@ function updateBasketTotals() {
   const items = draft.items;
   const { totals, missing } = sumItems(items);
   document.getElementById('basket-count').textContent = items.length ? `(${items.length})` : '';
-  document.getElementById('basket-total').textContent = items.length ? `${formatNumber(totals.calories)} kcal` : '';
+  document.getElementById('basket-total').textContent = items.length && totals.calories !== null ? `${formatNumber(totals.calories)} kcal` : '';
   const parts = ['protein', 'sugars', 'sodium'].map((key) => {
     const f = NUTRIENT_FIELDS.find((n) => n.key === key);
     if (totals[key] === null) return `${f.label} –`; // 아는 값이 없음
@@ -226,7 +258,17 @@ function updateBasketTotals() {
 function setItemMultiplier(item, m) {
   item.multiplier = m;
   item.nutrients = scaleNutrients(item.base, m);
-  item.amountError = false;
+  // '전체'가 허용 범위를 넘는 큰 용량이면 직접 입력으로 고치게 한다
+  item.amountError = !multiplierOk(m);
+  if (item.amountError) item.customOpen = true;
+}
+
+function focusCustomInput(id) {
+  const input = document.querySelector(`.basket-item[data-id="${id}"] [data-action="custom-amount"]`);
+  if (input) {
+    input.focus();
+    input.select();
+  }
 }
 
 function onBasketClick(e) {
@@ -242,36 +284,106 @@ function onBasketClick(e) {
     if (editingItemId === id) closeFoodEditor();
     renderBasket();
   } else if (action === 'amount') {
+    item.touched = true; // 사용자가 고른 양은 자동 교체로 덮어쓰지 않는다
     const mode = btn.dataset.mode;
+    const full = fullMultiplier(item);
     item.customOpen = mode === 'custom';
-    if (mode === 'full') setItemMultiplier(item, 1);
-    if (mode === 'half') setItemMultiplier(item, 0.5);
+    if (mode === 'full') setItemMultiplier(item, full);
+    if (mode === 'half') setItemMultiplier(item, roundTo(full / 2, 3));
     renderBasket();
-    if (mode === 'custom') {
-      const input = document.querySelector(`.basket-item[data-id="${id}"] [data-action="custom-amount"]`);
-      input.focus();
-      input.select();
-    }
+    if (mode === 'custom') focusCustomInput(id);
+  } else if (action === 'unit') {
+    item.customUnit = btn.dataset.unit;
+    renderBasket();
+    focusCustomInput(id);
   }
 }
 
-// 직접 입력 배수: 타이핑할 때마다 그 줄 kcal과 합계만 갱신
+// 직접 입력(배 또는 g): 타이핑할 때마다 그 줄 kcal과 합계만 갱신
 function onCustomAmountInput(e) {
   if (e.target.dataset.action !== 'custom-amount') return;
   const row = e.target.closest('.basket-item');
   const item = draft.items.find((it) => it.id === row.dataset.id);
-  const m = Number(e.target.value);
-  if (e.target.value.trim() !== '' && multiplierOk(m)) {
+  const raw = Number(e.target.value);
+  const grams = item.customUnit === 'g' && canUseGrams(item);
+  const m = grams ? roundTo(raw / item.basisAmount, 3) : raw;
+  item.touched = true;
+  if (e.target.value.trim() !== '' && raw > 0 && multiplierOk(m)) {
     setItemMultiplier(item, m);
     item.customOpen = true;
   } else {
     item.amountError = true;
   }
   row.classList.toggle('invalid', item.amountError);
-  row.querySelector('.basket-kcal').textContent = `${formatNumber(item.nutrients.calories)} kcal`;
+  row.querySelector('.basket-kcal').textContent = kcalText(item.nutrients.calories);
   updateBasketTotals();
 }
 
+// ---------- 사진 분석 결과 담기 (photo.js가 부른다) ----------
+
+// 저장되는 basis 문구 — 사람이 읽는 문장으로 (CLAUDE.md 9장 basis)
+function basisText(a) {
+  const total = a.totalAmount ? ` (총 ${formatNumber(a.totalAmount)}g)` : '';
+  if (a.basisType === 'per_100g') return `100g당${total}`;
+  if (a.basisType === 'per_serving') return `1회 제공량${a.basisAmount ? `(${formatNumber(a.basisAmount)}g)` : ''}당${total}`;
+  if (a.basisType === 'total') return `총 내용량${a.totalAmount ? `(${formatNumber(a.totalAmount)}g)` : ''}당`;
+  return '예상 · 일반적인 1인분 기준';
+}
+
+// 공백·대소문자만 다른 이름은 같은 음식으로 본다
+function nameKey(name) {
+  return name.replace(/\s+/g, '').toLowerCase();
+}
+
+/**
+ * 분석된 음식을 끼니에 자동으로 담는다 (양 기본값 '전체', 6장 4번).
+ * 같은 이름이 이미 담겨 있으면 중복으로 담지 않는다 — 성분표와 음식 사진을 둘 다 찍은 경우 대비.
+ * 단, 성분표 값이 사진 추정보다 정확하므로, 아직 사용자가 손대지 않은 '사진 추정' 음식은 성분표 값으로 바꾼다.
+ * (사진 여러 장은 동시에 분석되어 어느 쪽 답이 먼저 올지 모르기 때문)
+ * 반환: { results: 항목마다 'added' | 'duplicate' | 'replaced', replaced: [{ photoId, index }] (바뀐 쪽 카드 표시용) }
+ */
+function addAnalyzedItems(photoId, kind, analyzed) {
+  if (!draft) return { results: [], replaced: [] };
+  const replaced = [];
+  const results = analyzed.map((a, index) => {
+    const fields = {
+      name: a.name,
+      source: kind === 'label' ? 'label' : 'photo',
+      basis: basisText(a),
+      basisAmount: a.basisAmount,
+      totalAmount: a.totalAmount,
+      photoId,
+      photoIndex: index,
+      base: { ...a.nutrients },
+      customOpen: false,
+      customUnit: undefined,
+      touched: false,
+    };
+    const existing = a.name ? draft.items.find((it) => it.name && nameKey(it.name) === nameKey(a.name)) : null;
+    if (existing) {
+      if (kind === 'label' && existing.source === 'photo' && !existing.touched) {
+        replaced.push({ photoId: existing.photoId, index: existing.photoIndex });
+        Object.assign(existing, fields);
+        setItemMultiplier(existing, fullMultiplier(existing));
+        return 'replaced';
+      }
+      return 'duplicate';
+    }
+    const item = { id: newEntryId(), ...fields };
+    setItemMultiplier(item, fullMultiplier(item));
+    draft.items.push(item);
+    return 'added';
+  });
+  renderBasket();
+  return { results, replaced };
+}
+// 같은 카드에서 재분석하면 그 사진으로 담았던 음식은 빼고 다시 담는다
+function removeItemsFromPhoto(photoId) {
+  if (!draft) return;
+  draft.items = draft.items.filter((it) => it.photoId !== photoId);
+  if (editingItemId && !draft.items.some((it) => it.id === editingItemId)) closeFoodEditor();
+  renderBasket();
+}
 // ---------- 저장 ----------
 
 // 저장 버튼 상태: 담긴 음식이 있거나, 입력칸에 완성된 음식이 있으면 저장 가능
@@ -281,11 +393,15 @@ function updateSaveState() {
   const pendingEmpty = !editorOpen() || foodFormIsEmpty();
   const pendingValid = !pendingEmpty && readFoodForm().errors.length === 0;
   const amountBad = draft.items.some((it) => it.amountError);
+  const incomplete = draft.items.some(needsInput);
+  const analyzing = typeof isAnalyzing === 'function' && isAnalyzing();
   let hint = '';
-  if (amountBad) hint = `먹은 양은 ${MULTIPLIER_LIMITS.min}~${MULTIPLIER_LIMITS.max}배 사이로 입력해 주세요.`;
+  if (analyzing) hint = '사진을 분석하는 중이에요. 잠시만 기다려 주세요.';
+  else if (incomplete) hint = '이름이나 열량이 비어 있는 음식이 있어요. 빨간 줄을 눌러 채워 주세요.';
+  else if (amountBad) hint = `먹은 양은 ${MULTIPLIER_LIMITS.min}~${MULTIPLIER_LIMITS.max}배 사이로 입력해 주세요.`;
   else if (!pendingEmpty && !pendingValid && draft.items.length > 0) hint = '입력 중인 음식을 마저 채우거나 비워 주세요.';
   else if (!info.meal) hint = '식사 종류를 골라 주세요.';
-  const blocked = amountBad || (!pendingEmpty && !pendingValid);
+  const blocked = analyzing || incomplete || amountBad || (!pendingEmpty && !pendingValid);
   const hasFood = draft.items.length > 0 || pendingValid;
   document.getElementById('meal-save').disabled = !(info.meal && info.date && info.time && hasFood && !blocked);
   document.getElementById('hint-meal-save').textContent = hint;
@@ -389,9 +505,9 @@ function startDraft(meal, isEdit) {
   document.getElementById('meal-save-label').textContent = isEdit ? '수정 완료' : '오늘 식사에 추가하기';
   document.getElementById('meal-delete').hidden = !isEdit;
   closeFoodEditor();
+  resetPhotos(); // 이전 끼니의 분석 카드·미리보기 정리 (사진은 저장하지 않음)
   renderBasket();
-  // 새 끼니는 아직 사진 업로드가 없으니(4단계) 직접 입력칸을 펼친 채 시작
-  if (!isEdit) openFoodEditor();
+  // 메인 입력은 사진 → 업로드 박스를 먼저 보여주고 직접 입력은 '+ 음식 추가'로 (6장)
   draftSnapshot = draftState();
   showScreen('screen-record');
 }

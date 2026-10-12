@@ -1437,3 +1437,401 @@ select:focus {
     width: 104px;
   }
 }
+/* ---------- 4단계: 사진 업로드 · AI 분석 결과 · 앱 설정 ---------- */
+
+.upload-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  border: 2px dashed var(--green);
+  border-radius: 18px;
+  background: #f7faef;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.upload-box:hover,
+.upload-box:focus-visible,
+.upload-box.dragging {
+  background: var(--green-soft);
+  outline: none;
+}
+
+.upload-box.dragging {
+  border-style: solid;
+}
+
+.upload-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.upload-text p {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+}
+
+.upload-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-title);
+  font-size: 1.1rem !important;
+  font-weight: 800;
+  color: var(--green-dark);
+}
+
+.upload-buddy {
+  width: 84px;
+  height: auto;
+  flex-shrink: 0;
+  border-radius: 14px;
+}
+
+.analysis h2 {
+  margin: 4px 0 10px;
+}
+
+.analysis-cards {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.photo-card {
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1.5px solid var(--line);
+}
+
+.photo-card header {
+  padding: 10px 14px;
+  background: var(--green-soft);
+}
+
+.photo-card.status-error header,
+.photo-card.kind-unknown header {
+  background: #fff1df;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--green-dark);
+}
+
+.badge .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.badge-warn {
+  color: #b86f12;
+}
+
+.badge-loading {
+  color: var(--muted);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--line);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.photo-card-body {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.photo-preview {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--card-soft);
+}
+
+.photo-result {
+  min-width: 0;
+}
+
+.card-msg {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.analyzed-item + .analyzed-item {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+.analyzed-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.analyzed-head strong {
+  font-size: 0.95rem;
+}
+
+.need {
+  color: var(--brown);
+  font-style: normal;
+  font-size: 0.85rem;
+}
+
+.item-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+.item-status.ok {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.item-status.dup {
+  background: #f1ebe0;
+  color: var(--muted);
+}
+
+.analyzed-basis {
+  margin: 2px 0 6px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.low-conf {
+  display: inline-block;
+  margin-left: 4px;
+  color: #b86f12;
+  font-weight: 700;
+}
+
+/* 영양소 9개 표: 좁은 화면 2열, 넓으면 3열 */
+.nutri-table {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.nutri-table div {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid #f3ede2;
+  padding: 2px 0;
+}
+
+.nutri-table dt {
+  color: var(--muted);
+}
+
+.nutri-table dd {
+  margin: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nutri-table .muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 14px 12px;
+}
+
+.photo-actions:empty {
+  display: none;
+}
+
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--green-dark);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-btn .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.chip-btn:hover {
+  border-color: var(--green);
+}
+
+/* 담긴 음식: 이름·열량이 비어 채워야 하는 줄 */
+.basket-item.needs-input {
+  border-color: var(--brown);
+  background: #fff6ef;
+}
+
+.basket-item.needs-input .basket-name em,
+.basket-item.needs-input .basket-kcal {
+  color: var(--brown);
+  font-style: normal;
+}
+
+.basket-basis {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.unit-toggle {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.unit-btn {
+  padding: 4px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.unit-btn.on {
+  border-color: var(--green-dark);
+  background: var(--green-dark);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* 앱 설정 카드 */
+.app-settings {
+  margin-top: 20px;
+}
+
+.setting-label {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--green-dark);
+  font-size: 0.92rem;
+}
+
+.setting-label small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.key-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.key-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.key-row input:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.key-row code {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--card-soft);
+  font-size: 0.95rem;
+}
+
+.app-settings .hint:empty {
+  display: none;
+}
+
+.app-settings .hint {
+  color: var(--green-dark);
+}
+
+@media (min-width: 900px) {
+  .analysis-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .photo-card-body {
+    grid-template-columns: 120px minmax(0, 1fr);
+  }
+
+  .photo-preview {
+    width: 120px;
+    height: 120px;
+  }
+
+  .upload-box {
+    padding: 28px;
+  }
+
+  .upload-buddy {
+    width: 120px;
+  }
+}
+/* 모바일 분석 카드: 사진은 작은 썸네일로 왼쪽 위, 영양소 표는 카드 폭 전체 (좁은 칸에 표를 넣으면 '나트륨'이 한 글자씩 꺾임) */
+@media (max-width: 899px) {
+  .photo-card-body {
+    display: block;
+  }
+
+  .photo-card-body::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  .photo-preview {
+    float: left;
+    width: 64px;
+    height: 64px;
+    margin: 0 10px 6px 0;
+  }
+
+  .nutri-table {
+    clear: both;
+    padding-top: 4px;
+  }
+}

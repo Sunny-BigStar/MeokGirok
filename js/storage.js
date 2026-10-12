@@ -59,6 +59,19 @@ function migrateLegacyEntries(list) {
   return meals;
 }
 
+// Gemini API 키: 사용자가 내 정보에서 입력 → 이 기기 localStorage에만 (코드·파일에 절대 넣지 않음, CLAUDE.md 10장)
+function loadApiKey() {
+  return localStorage.getItem(STORAGE_KEYS.apiKey) || '';
+}
+
+function saveApiKey(key) {
+  localStorage.setItem(STORAGE_KEYS.apiKey, key);
+}
+
+function deleteApiKey() {
+  localStorage.removeItem(STORAGE_KEYS.apiKey);
+}
+
 function saveEntries(entries) {
   localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(entries));
 }

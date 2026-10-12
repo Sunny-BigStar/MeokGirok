@@ -119,5 +119,17 @@ const NEXT_MEAL_TIPS = {
   none: '지금처럼 골고루 챙겨 먹어요.',
 };
 
-// 먹은 양 배수 허용 범위
-const MULTIPLIER_LIMITS = { min: 0.1, max: 10 };
+// 먹은 양 배수 허용 범위 — 성분표가 100g당일 때 큰 용량(예: 1.5L 음료 = 15배)도 담을 수 있게 20배까지
+const MULTIPLIER_LIMITS = { min: 0.1, max: 20 };
+
+// ---------- 사진 자동 분석 (Gemini, CLAUDE.md 6장) ----------
+// 모델은 이 상수 하나만 바꾸면 된다 (2026-10-12 공식 문서에서 Stable 확인)
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
+const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+// 보내기 전에 사진을 줄인다: 전송 시간·무료 한도를 아끼고, 성분표 숫자를 읽기엔 충분한 크기
+const PHOTO_MAX_SIDE = 1280;
+const PHOTO_JPEG_QUALITY = 0.85;
+
+// 이보다 낮으면 '확신 낮음 · 꼭 확인해 주세요' 표시
+const LOW_CONFIDENCE = 0.5;

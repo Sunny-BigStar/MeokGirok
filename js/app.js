@@ -268,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderToday();
     showToast(isFirst ? '반가워요! 이제 먹은 걸 기록해 보세요.' : '내 정보를 저장했어요.');
   });
+  initPhotoUpload();
   initRecordScreen({
     // 저장·삭제·뒤로 후 모두 오늘 화면으로 돌아온다
     onDone(message, opts = {}) {

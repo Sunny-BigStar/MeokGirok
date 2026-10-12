@@ -86,12 +86,33 @@
         </div>
       </section>
 
-      <!-- 화면 2: 기록하기 — 식사 종류·시간 → 음식 담기 → 줄마다 양 고르기 → 저장 (업로드 박스·AI 분석은 4단계) -->
+      <!-- 화면 2: 기록하기 — 사진 올리기 → AI 분석 → 끼니에 자동으로 담김 → 확인·양 고르기 → 저장 (6장 워크플로우) -->
       <section id="screen-record" class="screen" hidden>
         <div class="screen-head">
           <button id="record-back" type="button" class="icon-btn" data-icon="back" aria-label="뒤로"></button>
           <h1 id="record-title">기록하기</h1>
         </div>
+
+        <!-- 업로드 박스: 클릭·끌어다 놓기·모바일 카메라, 여러 장 한 번에 -->
+        <div class="card upload-card">
+          <div id="upload-box" class="upload-box" role="button" tabindex="0" aria-label="사진 올리기">
+            <div class="upload-text">
+              <p class="upload-title" data-icon="camera"><span>사진을 올려주세요!</span></p>
+              <p>영양성분표 사진 또는 음식 사진을 올리면 AI가 자동으로 인식하고 분석해요.</p>
+              <p class="note">눌러서 고르거나 끌어다 놓으세요 · 여러 장도 한 번에 올릴 수 있어요.</p>
+            </div>
+            <img class="upload-buddy" src="assets/scenes/photo.png" alt="" />
+          </div>
+          <!-- capture를 넣지 않아 휴대폰에서 '카메라로 찍기 / 앨범에서 고르기'를 사용자가 고른다 -->
+          <input id="photo-input" type="file" accept="image/*" multiple hidden />
+          <input id="reanalyze-input" type="file" accept="image/*" hidden />
+          <p class="note">사진은 분석을 위해 Google Gemini로 보내지고, 앱에는 저장되지 않아요.</p>
+        </div>
+
+        <section id="analysis" class="analysis" hidden>
+          <h2>AI 분석 결과</h2>
+          <div id="analysis-cards" class="analysis-cards"></div>
+        </section>
 
         <div class="card">
           <div class="card-head">
@@ -234,6 +255,22 @@
 
           <button id="me-save" type="submit" class="btn-primary" disabled>저장하고 시작하기</button>
         </form>
+
+        <!-- 앱 설정 (시안에 없음, 아래쪽에 작게): Gemini API 키. JSON 내보내기·초기화는 8단계 -->
+        <div id="app-settings" class="card app-settings">
+          <h2>앱 설정</h2>
+          <p class="setting-label">Gemini API 키 <small>(음식·성분표 사진 분석에만 필요해요)</small></p>
+          <div id="key-saved" class="key-row" hidden>
+            <code id="key-masked"></code>
+            <button id="key-delete" type="button" class="link-btn danger">삭제</button>
+          </div>
+          <form id="key-form" class="key-row" novalidate>
+            <input id="key-input" type="password" autocomplete="off" spellcheck="false" placeholder="AIza로 시작하는 키" aria-label="Gemini API 키" />
+            <button id="key-save" type="submit" class="btn-small" disabled>저장</button>
+          </form>
+          <p class="note">Google AI Studio(aistudio.google.com)에서 무료로 발급받을 수 있어요. 키는 이 기기에만 저장돼요.</p>
+          <p id="key-msg" class="hint"></p>
+        </div>
       </section>
     </main>
   </div>
@@ -244,7 +281,9 @@
   <script src="js/profile.js"></script>
   <script src="js/entries.js"></script>
   <script src="js/summary.js"></script>
+  <script src="js/gemini.js"></script>
   <script src="js/entry-form.js"></script>
+  <script src="js/photo.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

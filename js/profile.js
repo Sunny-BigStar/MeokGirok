@@ -101,10 +101,51 @@ function fillMeForm(profile) {
   // 첫 실행이면 환영 문구와 '시작하기', 이후엔 그냥 '저장'
   document.getElementById('me-save').textContent = profile ? '저장' : '저장하고 시작하기';
   document.getElementById('me-welcome').hidden = Boolean(profile);
+  // 첫 실행에는 기본 정보에만 집중하도록 앱 설정은 숨긴다
+  document.getElementById('app-settings').hidden = !profile;
+  renderApiKeyCard();
   updateMePreview();
 }
 
+// ---------- 앱 설정: Gemini API 키 ----------
+
+// 저장된 키는 앞뒤 4글자만 보여준다 (어깨 너머로 보이거나 화면 공유할 때 대비)
+function maskKey(key) {
+  return key.length <= 8 ? '•'.repeat(key.length) : `${key.slice(0, 4)}…${key.slice(-4)}`;
+}
+
+function renderApiKeyCard(message = '') {
+  const key = loadApiKey();
+  document.getElementById('key-saved').hidden = !key;
+  document.getElementById('key-form').hidden = Boolean(key);
+  document.getElementById('key-masked').textContent = key ? maskKey(key) : '';
+  document.getElementById('key-input').value = '';
+  document.getElementById('key-save').disabled = true;
+  document.getElementById('key-msg').textContent = message;
+}
+
+function initApiKeyCard() {
+  const input = document.getElementById('key-input');
+  input.addEventListener('input', () => {
+    document.getElementById('key-save').disabled = input.value.trim() === '';
+  });
+  document.getElementById('key-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    // 복사할 때 딸려 온 공백·줄바꿈 제거
+    const key = input.value.replace(/\s+/g, '');
+    if (!key) return;
+    saveApiKey(key);
+    renderApiKeyCard('키를 저장했어요. 이제 기록하기에서 사진을 올려 보세요.');
+  });
+  document.getElementById('key-delete').addEventListener('click', () => {
+    if (!confirm('저장된 API 키를 지울까요? 사진 분석을 쓰려면 다시 입력해야 해요.')) return;
+    deleteApiKey();
+    renderApiKeyCard('키를 지웠어요.');
+  });
+}
+
 function initMeScreen(onSaved) {
+  initApiKeyCard();
   renderActivityOptions();
   const form = meForm();
   form.addEventListener('input', updateMePreview);
