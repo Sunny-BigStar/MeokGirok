@@ -215,7 +215,7 @@ function basketRowHtml(it) {
   const basis = it.source === 'label' || it.source === 'photo' ? `<small class="basket-basis">${escapeHtml(it.basis)}</small>` : '';
   const classes = ['basket-item', it.id === editingItemId ? 'editing' : '', needsInput(it) ? 'needs-input' : '', it.amountError ? 'invalid' : ''].filter(Boolean).join(' ');
   return `
-    <li class="${classes}" data-id="${it.id}">
+    <li class="${classes}" data-id="${escapeHtml(it.id)}">
       <span class="basket-icon" title="${src.label}">${iconSvg(src.icon)}</span>
       <button type="button" class="basket-name" data-action="edit-item" title="눌러서 고치기">
         <strong>${name}</strong>
@@ -461,13 +461,15 @@ function updateSaveState() {
   const amountBad = draft.items.some((it) => it.amountError);
   const incomplete = draft.items.some(needsInput);
   const analyzing = typeof isAnalyzing === 'function' && isAnalyzing();
+  const broken = entriesBroken(); // 저장된 기록을 읽지 못하면 덮어쓰지 않게 저장 막기
   let hint = '';
-  if (analyzing) hint = '사진을 분석하는 중이에요. 잠시만 기다려 주세요.';
+  if (broken) hint = '저장된 기록을 읽지 못해 지금은 저장할 수 없어요. 내 정보에서 백업 가져오기나 전체 초기화를 해 주세요.';
+  else if (analyzing) hint = '사진을 분석하는 중이에요. 잠시만 기다려 주세요.';
   else if (incomplete) hint = '이름이나 열량이 비어 있는 음식이 있어요. 빨간 줄을 눌러 채워 주세요.';
   else if (amountBad) hint = `먹은 양은 ${MULTIPLIER_LIMITS.min}~${MULTIPLIER_LIMITS.max}배 사이로 입력해 주세요.`;
   else if (!pendingEmpty && !pendingValid && draft.items.length > 0) hint = '입력 중인 음식을 마저 채우거나 비워 주세요.';
   else if (!info.meal) hint = '식사 종류를 골라 주세요.';
-  const blocked = analyzing || incomplete || amountBad || (!pendingEmpty && !pendingValid);
+  const blocked = broken || analyzing || incomplete || amountBad || (!pendingEmpty && !pendingValid);
   const hasFood = draft.items.length > 0 || pendingValid;
   document.getElementById('meal-save').disabled = !(info.meal && info.date && info.time && hasFood && !blocked);
   document.getElementById('hint-meal-save').textContent = hint;

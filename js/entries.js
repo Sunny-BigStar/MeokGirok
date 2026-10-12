@@ -138,10 +138,6 @@ function getMeal(id) {
   return loadEntries().find((m) => m.id === id) || null;
 }
 
-// 같은 날 같은 식사 종류 끼니 찾기 (지금 수정 중인 끼니는 제외)
-function findMealByType(date, mealKey, excludeId) {
-  return loadEntries().find((m) => m.date === date && m.meal === mealKey && m.id !== excludeId) || null;
-}
 
 // id가 이미 있으면 수정, 없으면 추가
 function upsertMeal(meal) {

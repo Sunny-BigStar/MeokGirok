@@ -1937,34 +1937,6 @@ select:focus {
   background: transparent;
 }
 
-.date-toggle {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4px 10px;
-  border: 0;
-  border-radius: 12px;
-  background: none;
-  cursor: pointer;
-}
-
-.date-toggle:hover,
-.date-toggle[aria-expanded='true'] {
-  background: var(--green-soft);
-}
-
-.date-toggle .date-title {
-  font-family: var(--font-title);
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--green-dark);
-}
-
-.date-hint {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
 .date-actions {
   display: flex;
   justify-content: center;
@@ -2304,4 +2276,14 @@ button.cal-cell:hover:not(:disabled) {
 .data-section #data-reset {
   margin-top: 6px;
   padding-left: 0;
+}
+/* 저장된 기록을 읽지 못했을 때 경고 (덮어쓰기 방지) */
+.data-warning {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fde8e4;
+  border: 1.5px solid #f4c3b9;
+  color: #8a3b2c;
+  font-size: 0.9rem;
 }

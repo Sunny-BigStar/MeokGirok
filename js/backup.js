@@ -37,6 +37,12 @@ function downloadBackup() {
 
 class BackupError extends Error {}
 
+// id는 HTML 속성(data-id)에 들어가므로 글자·숫자·-·_ 만 받는다.
+// 다른 사람이 만든 파일의 id에 따옴표 등을 넣어 화면에 코드를 끼워 넣는 것을 막기 위해 — 아니면 새 id
+function safeId(id) {
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : newEntryId();
+}
+
 function isValidDate(s) {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
   const [y, m, d] = s.split('-').map(Number);
@@ -74,7 +80,7 @@ function cleanItem(it, where) {
   }
   if (nutrients.calories === null) throw new BackupError(`${where} '${name}'의 열량이 없어요.`);
   return {
-    id: typeof it.id === 'string' && it.id ? it.id : newEntryId(),
+    id: safeId(it.id),
     name,
     source: INPUT_SOURCES[it.source] ? it.source : 'manual',
     basis: typeof it.basis === 'string' ? it.basis : '',
@@ -91,7 +97,7 @@ function cleanMeal(m, i) {
   if (!MEAL_TYPES.some((t) => t.key === m.meal)) throw new BackupError(`${where}의 식사 종류를 알 수 없어요.`);
   if (!Array.isArray(m.items)) throw new BackupError(`${where}에 음식 목록이 없어요.`);
   return {
-    id: typeof m.id === 'string' && m.id ? m.id : newEntryId(),
+    id: safeId(m.id),
     date: m.date,
     time: m.time,
     meal: m.meal,
@@ -116,7 +122,8 @@ function parseBackup(text) {
     if (!Array.isArray(obj.entries)) throw new BackupError('기록 목록이 없어요.');
     // 2단계 첫 버전 형식(음식 1개 = 기록 1건)도 끼니 형식으로 바꿔서 받는다
     const raw = obj.entries.some(isLegacyEntry) ? migrateLegacyEntries(obj.entries) : obj.entries;
-    const entries = raw.map(cleanMeal);
+    // 음식이 하나도 없는 끼니는 빈 줄로만 보이므로 받지 않는다
+    const entries = raw.map(cleanMeal).filter((m) => m.items.length > 0);
     const profile = cleanProfile(obj.profile);
     const dismissed = (Array.isArray(obj.dismissed) ? obj.dismissed : [])
       .filter((d) => d && isValidDate(d.date) && MAIN_MEALS.includes(d.meal))
@@ -131,11 +138,12 @@ function parseBackup(text) {
 // 가져오기 = 합치기가 아니라 바꾸기 (같은 끼니가 두 번 들어가지 않게)
 function applyBackup(data) {
   if (data.profile) saveProfile(data.profile); // 파일에 프로필이 없으면 지금 프로필 유지
-  saveEntries(data.entries);
+  saveEntries(data.entries, { force: true }); // 사용자가 확인한 '바꾸기'라 읽지 못한 기록이 있어도 덮어쓴다
   localStorage.setItem(STORAGE_KEYS.dismissed, JSON.stringify(data.dismissed));
 }
 
 // 전체 초기화: 기록·내 정보·알림 설정·API 키 모두
 function resetAll() {
   Object.values(STORAGE_KEYS).forEach((k) => localStorage.removeItem(k));
+  loadEntries(); // 비워진 상태를 다시 읽어 '읽지 못함' 표시를 푼다
 }

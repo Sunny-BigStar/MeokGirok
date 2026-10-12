@@ -40,7 +40,7 @@ function mealRowHtml(m) {
     })
     .join('<span class="food-plus">+</span>');
   return `
-    <li class="meal-row" data-id="${m.id}">
+    <li class="meal-row" data-id="${escapeHtml(m.id)}">
       <div class="meal-type">
         <span class="meal-type-icon">${iconSvg(type.icon)}</span>
         <span><strong>${type.label}</strong><small>${m.time}</small></span>
@@ -279,6 +279,7 @@ function renderToday(opts = {}) {
     : '이 날은 기록이 없어요. 깜빡했다면 지금 남겨도 괜찮아요.';
 
   const day = sumDay(date);
+  document.getElementById('data-warning').hidden = !entriesBroken(); // 읽기는 sumDay에서 했으므로 결과를 바로 반영
   const judged = judgeNutrients(day.totals, getTargets(profile));
   renderSummary(day, judged, isToday);
   const msg = renderBalance(day, judged, isToday, dayLabel);

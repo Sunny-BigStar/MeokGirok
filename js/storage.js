@@ -14,16 +14,25 @@ function saveProfile(profile) {
   localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
 }
 
+// 저장된 기록을 읽지 못했는지 (JSON이 깨짐 등). 이때 새로 저장하면 원래 기록을 덮어써 잃으므로 저장을 막는다
+let entriesUnreadable = false;
+
+function entriesBroken() {
+  return entriesUnreadable;
+}
+
 // entries = 끼니 배열. 예전 형식(음식 1개 = 기록 1건)이 있으면 읽을 때 한 번 변환해 다시 저장한다
 function loadEntries() {
   let list;
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.entries);
     list = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(list)) return [];
+    if (!Array.isArray(list)) throw new Error('not array');
   } catch (e) {
+    entriesUnreadable = true; // 빈 목록처럼 보여주되, 원본은 건드리지 않는다
     return [];
   }
+  entriesUnreadable = false;
   if (list.some(isLegacyEntry)) {
     list = migrateLegacyEntries(list);
     saveEntries(list);
@@ -90,6 +99,9 @@ function dismissMeal(date, meal, now = new Date()) {
   localStorage.setItem(STORAGE_KEYS.dismissed, JSON.stringify(list));
 }
 
-function saveEntries(entries) {
+// opts.force: 백업 가져오기처럼 '덮어쓰기'가 사용자의 뜻일 때만
+function saveEntries(entries, opts = {}) {
+  if (entriesUnreadable && !opts.force) throw new Error('entries-unreadable');
   localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(entries));
+  entriesUnreadable = false;
 }
