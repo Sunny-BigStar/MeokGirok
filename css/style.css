@@ -2660,3 +2660,59 @@ button.cal-cell:hover:not(:disabled) {
   word-break: keep-all;
   overflow-wrap: anywhere;
 }
+/* ---------- 분석 카드 이름 제자리 고치기 (✏️, 6장) ---------- */
+.name-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.name-edit-btn:hover,
+.name-edit-btn:focus-visible {
+  background: var(--green-soft);
+  outline: none;
+}
+
+.name-edit-btn strong {
+  font-size: 0.95rem;
+}
+
+.pencil {
+  display: inline-flex;
+  color: var(--green);
+}
+
+.pencil .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.name-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.name-edit input {
+  flex: 1;
+  min-width: 120px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--green);
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.name-edit input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--green-soft);
+}

@@ -138,9 +138,18 @@ function analyzedItemHtml(p, item, i) {
       : '';
   const basis = estimated ? '예상 · 일반적인 1인분 기준 · 참고용' : basisText(item);
   const low = item.confidence < LOW_CONFIDENCE ? '<span class="low-conf">확신 낮음 · 꼭 확인해 주세요</span>' : '';
+  // 이름(✏️)을 누르면 그 자리에서 입력칸으로 — 이름만 바뀌고 영양소는 그대로 (다시 분석하지 않음, 6장)
+  const head =
+    p.editingIndex === i
+      ? `<div class="name-edit">
+           <input type="text" maxlength="40" value="${escapeHtml(item.name)}" placeholder="음식 이름" data-name-input data-photo="${p.id}" data-index="${i}" aria-label="음식 이름 고치기" />
+           <button type="button" class="btn-small" data-action="name-save" data-photo="${p.id}" data-index="${i}">저장</button>
+           <button type="button" class="link-btn" data-action="name-cancel" data-photo="${p.id}" data-index="${i}">취소</button>
+         </div>`
+      : `<button type="button" class="name-edit-btn" data-action="name-edit" data-photo="${p.id}" data-index="${i}" title="이름 고치기"><strong>${name}</strong><span class="pencil" aria-label="이름 고치기">${iconSvg('pencil')}</span></button>`;
   return `
     <div class="analyzed-item">
-      <div class="analyzed-head"><strong>${name}</strong>${statusText}</div>
+      <div class="analyzed-head">${head}${statusText}</div>
       ${chips}
       <p class="analyzed-basis">${basis} ${low}</p>
       ${nutrientTableHtml(item, estimated)}
@@ -166,7 +175,8 @@ function photoActionsHtml(p) {
     return [btn('manual', '직접 입력'), btn('switch', '성분표로 다시 분석', 'data-kind="label"'), btn('switch', '음식 사진으로 다시 분석', 'data-kind="food"'), reanalyze].join('');
   }
   const other = p.kind === 'label' ? 'food' : 'label';
-  return [reanalyze, btn('switch', `분류 바꾸기 → ${other === 'label' ? '성분표' : '음식 사진'}`, `data-kind="${other}"`)].join('');
+  // '분류 바꾸기'처럼 모호한 말 대신 무엇으로 다시 분석하는지 그대로 (6장)
+  return [reanalyze, btn('switch', other === 'label' ? '성분표로 다시 분석' : '음식 사진으로 다시 분석', `data-kind="${other}"`)].join('');
 }
 
 function photoCardHtml(p) {
@@ -199,7 +209,19 @@ function onPhotoCardClick(e) {
   const photo = photos.find((p) => p.id === btn.dataset.photo);
   if (!photo) return;
   const action = btn.dataset.action;
-  if (action === 'rename') {
+  if (action === 'name-edit') {
+    photos.forEach((x) => (x.editingIndex = null)); // 한 번에 하나만 고치기
+    photo.editingIndex = Number(btn.dataset.index);
+    renderPhotoCards();
+    const input = document.querySelector(`[data-name-input][data-photo="${photo.id}"]`);
+    input.focus();
+    input.select();
+  } else if (action === 'name-save') {
+    saveCardName(photo, Number(btn.dataset.index));
+  } else if (action === 'name-cancel') {
+    photo.editingIndex = null;
+    renderPhotoCards();
+  } else if (action === 'rename') {
     // 칩으로 이름 확정: 담긴 음식 이름을 바꾸고 카드에도 반영 ('(추정)' 표시 없어짐)
     const index = Number(btn.dataset.index);
     if (renameItemFromPhoto(photo.id, index, btn.dataset.quickName)) {
@@ -225,6 +247,20 @@ function onPhotoCardClick(e) {
   }
 }
 
+// 카드에서 고친 이름 저장: 카드와 담긴 음식 목록 이름을 함께 바꾸고 '(추정)' 표시를 없앤다. 영양소는 그대로
+function saveCardName(photo, index) {
+  const input = document.querySelector(`[data-name-input][data-photo="${photo.id}"]`);
+  const name = input ? input.value.trim() : '';
+  if (!name) {
+    input.focus();
+    return; // 빈 이름은 저장하지 않음
+  }
+  photo.items[index].name = name;
+  photo.items[index].nameGuessed = false;
+  photo.editingIndex = null;
+  renameItemFromPhoto(photo.id, index, name); // 담긴 음식이 있으면 그 이름도 (없으면 카드만)
+  renderPhotoCards();
+}
 // 같은 카드에서 다른 사진으로 바꿔 다시 분석 — 이 카드로 담았던 음식은 빼고 다시 담는다
 function onReanalyzeFile(e) {
   const file = e.target.files[0];
@@ -267,4 +303,17 @@ function initPhotoUpload() {
   });
   document.getElementById('reanalyze-input').addEventListener('change', onReanalyzeFile);
   document.getElementById('analysis-cards').addEventListener('click', onPhotoCardClick);
+  // 이름 입력칸: Enter = 저장, Esc = 취소
+  document.getElementById('analysis-cards').addEventListener('keydown', (e) => {
+    if (!e.target.matches('[data-name-input]')) return;
+    const photo = photos.find((x) => x.id === e.target.dataset.photo);
+    if (!photo) return;
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveCardName(photo, Number(e.target.dataset.index));
+    } else if (e.key === 'Escape') {
+      photo.editingIndex = null;
+      renderPhotoCards();
+    }
+  });
 }
