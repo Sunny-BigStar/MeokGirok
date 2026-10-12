@@ -143,8 +143,25 @@
               <p id="basket-empty" class="empty">아직 담긴 음식이 없어요.</p>
               <p id="basket-summary" class="note"></p>
 
-              <!-- + 음식 추가: 지금은 직접 입력만, 최근 음식은 5단계 -->
-              <button id="add-food" type="button" class="btn-dashed" data-icon="plus"><span>음식 추가 (직접 입력)</span></button>
+              <!-- + 음식 추가: 직접 입력 · 최근 음식 (CLAUDE.md 4-2) -->
+              <div id="add-food-row" class="add-food-row">
+                <button id="add-food" type="button" class="btn-dashed" data-icon="plus"><span>직접 입력</span></button>
+                <button id="add-recent" type="button" class="btn-dashed" data-icon="clock"><span>최근 음식</span></button>
+              </div>
+
+              <!-- 최근 먹은 음식: 고르면 끼니에 담기만 하고, 저장은 '오늘 식사에 추가하기'에서 -->
+              <div id="recent-panel" class="recent-panel" hidden>
+                <div class="recent-head">
+                  <img src="assets/scenes/relog.png" alt="" />
+                  <div>
+                    <p class="editor-title">최근 먹은 음식</p>
+                    <p class="note">자주 먹은 순이에요. 담은 뒤 줄에서 양을 바꿀 수 있어요.</p>
+                  </div>
+                </div>
+                <ul id="recent-list" class="recent-list"></ul>
+                <p id="recent-empty" class="empty" hidden>아직 기록한 음식이 없어요. 한 번 기록하면 여기서 바로 다시 담을 수 있어요.</p>
+                <button id="recent-close" type="button" class="link-btn">닫기</button>
+              </div>
 
               <form id="food-form" class="food-editor" novalidate hidden>
                 <p class="editor-title">직접 입력 <small>(먹은 양은 담은 뒤 줄에서 골라요)</small></p>

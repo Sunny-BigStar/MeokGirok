@@ -70,6 +70,56 @@ function amountLabel(multiplier) {
   return multiplier === 0.5 ? '절반' : `${multiplier}배`;
 }
 
+// 공백·대소문자만 다른 이름은 같은 음식으로 본다 (중복 담기 방지·최근 음식 묶기 공통)
+function nameKey(name) {
+  return name.replace(/\s+/g, '').toLowerCase();
+}
+
+// "오늘" · "어제" · "10월 3일"
+function relativeDay(dateStr, now = new Date()) {
+  const today = toDateStr(now);
+  const y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (dateStr === today) return '오늘';
+  if (dateStr === toDateStr(y)) return '어제';
+  return formatMonthDay(dateStr);
+}
+
+/**
+ * 최근 먹은 음식 목록 — 따로 저장하지 않고 entries에서 계산 (CLAUDE.md 9장).
+ * 이름 기준으로 묶고, 최근 30일 안에 자주 먹은 순 → 같으면 최근 순. 30일보다 오래된 음식은 남는 자리에 최근 순.
+ * 반환: [{ name, item(마지막으로 먹었을 때의 음식), count(전체 횟수), lastDate }]
+ */
+function getRecentFoods(now = new Date()) {
+  const cutoffDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (RECENT_FOODS.days - 1));
+  const cutoff = toDateStr(cutoffDay);
+  const byName = new Map();
+  for (const meal of loadEntries()) {
+    for (const it of meal.items) {
+      if (!it.name) continue;
+      const key = nameKey(it.name);
+      const when = `${meal.date} ${meal.time}`;
+      const f = byName.get(key) || { count: 0, recentCount: 0, lastWhen: '', lastDate: '', item: null };
+      f.count++;
+      if (meal.date >= cutoff) f.recentCount++;
+      // 같은 음식은 마지막으로 먹었을 때의 값·양을 쓴다
+      if (when > f.lastWhen) {
+        f.lastWhen = when;
+        f.lastDate = meal.date;
+        f.item = it;
+      }
+      byName.set(key, f);
+    }
+  }
+  const all = [...byName.values()];
+  const byRecent = (a, b) => b.lastWhen.localeCompare(a.lastWhen);
+  const recent = all.filter((f) => f.lastDate >= cutoff).sort((a, b) => b.recentCount - a.recentCount || byRecent(a, b));
+  const older = all.filter((f) => f.lastDate < cutoff).sort(byRecent);
+  return recent
+    .concat(older)
+    .slice(0, RECENT_FOODS.limit)
+    .map((f) => ({ name: f.item.name, item: f.item, count: f.count, lastDate: f.lastDate }));
+}
+
 // 사용자가 입력한 음식명을 innerHTML에 넣기 전에 이스케이프
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);

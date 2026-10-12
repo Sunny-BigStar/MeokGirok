@@ -102,7 +102,7 @@ function closeFoodEditor() {
   foodMeta = { source: 'manual', basis: '직접 입력한 값' };
   form.querySelector('.more-nutrients').open = false;
   document.getElementById('food-submit').textContent = '이 끼니에 담기';
-  document.getElementById('add-food').hidden = false;
+  updateAddRow();
   updateFoodState();
 }
 
@@ -116,7 +116,7 @@ function openFoodEditor(prefill = {}) {
   form.hidden = false;
   editingItemId = null;
   document.getElementById('food-submit').textContent = '이 끼니에 담기';
-  document.getElementById('add-food').hidden = true;
+  closeRecentPanel(); // 입력칸과 최근 음식 목록은 한 번에 하나만
   form.foodName.value = prefill.name || '';
   const nutrients = prefill.nutrients || {};
   let hasOptional = false;
@@ -128,6 +128,7 @@ function openFoodEditor(prefill = {}) {
   // 채워진 선택 영양성분이 있으면 접힌 칸을 펼쳐서 확인할 수 있게
   form.querySelector('.more-nutrients').open = hasOptional;
   foodMeta = { source: prefill.source || 'manual', basis: prefill.basis || '직접 입력한 값' };
+  updateAddRow();
   updateFoodState();
 }
 
@@ -319,6 +320,75 @@ function onCustomAmountInput(e) {
   updateBasketTotals();
 }
 
+// ---------- 최근 먹은 음식 다시 담기 (5단계) ----------
+
+function recentOpen() {
+  return !document.getElementById('recent-panel').hidden;
+}
+
+// '+ 직접 입력 / 최근 음식' 버튼 줄은 입력칸·목록이 모두 닫혀 있을 때만
+function updateAddRow() {
+  document.getElementById('add-food-row').hidden = editorOpen() || recentOpen();
+}
+
+function inBasket(name) {
+  return draft.items.some((it) => it.name && nameKey(it.name) === nameKey(name));
+}
+
+function renderRecentList() {
+  const foods = getRecentFoods();
+  document.getElementById('recent-empty').hidden = foods.length > 0;
+  document.getElementById('recent-list').innerHTML = foods
+    .map((f, i) => {
+      const meta = f.count > 1 ? `${f.count}번 먹었어요` : relativeDay(f.lastDate);
+      const amount = f.item.multiplier !== 1 ? ` · ${amountLabel(f.item.multiplier)}` : '';
+      const added = inBasket(f.name);
+      return `
+      <li class="recent-item">
+        <span class="recent-text">
+          <strong>${escapeHtml(f.name)}</strong>
+          <small>${formatNumber(f.item.nutrients.calories)} kcal${amount} · ${meta}</small>
+        </span>
+        <button type="button" class="btn-small${added ? ' done' : ''}" data-recent="${i}" ${added ? 'disabled' : ''}>${added ? '담김 ✓' : '담기'}</button>
+      </li>`;
+    })
+    .join('');
+}
+
+function openRecentPanel() {
+  // 쓰던 내용이 없을 때만 입력칸을 닫는다 (입력하던 걸 잃지 않게)
+  if (editorOpen() && foodFormIsEmpty() && !editingItemId) closeFoodEditor();
+  document.getElementById('recent-panel').hidden = false;
+  renderRecentList();
+  updateAddRow();
+}
+
+function closeRecentPanel() {
+  document.getElementById('recent-panel').hidden = true;
+  updateAddRow();
+}
+
+/**
+ * 고른 음식을 지금 끼니에 담는다 — 마지막으로 먹었을 때의 값·양 그대로, 출처는 'relog'.
+ * 저장된 값은 먹은 양이 반영된 값이라 1배 값(base)을 되돌려 두어야 줄에서 양을 바꿀 수 있다.
+ * 바로 저장하지 않는다: 담긴 목록이 확인 화면이고 저장은 '오늘 식사에 추가하기' (6장)
+ */
+function addRecentFood(food) {
+  if (!draft || inBasket(food.name)) return;
+  const last = food.item;
+  draft.items.push({
+    id: newEntryId(),
+    name: last.name,
+    source: 'relog',
+    basis: last.basis,
+    multiplier: last.multiplier,
+    base: unscaleNutrients(last.nutrients, last.multiplier),
+    nutrients: { ...last.nutrients },
+    amountError: false,
+  });
+  renderBasket();
+  renderRecentList(); // 방금 담은 음식은 '담김'으로
+}
 // ---------- 사진 분석 결과 담기 (photo.js가 부른다) ----------
 
 // 저장되는 basis 문구 — 사람이 읽는 문장으로 (CLAUDE.md 9장 basis)
@@ -330,10 +400,6 @@ function basisText(a) {
   return '예상 · 일반적인 1인분 기준';
 }
 
-// 공백·대소문자만 다른 이름은 같은 음식으로 본다
-function nameKey(name) {
-  return name.replace(/\s+/g, '').toLowerCase();
-}
 
 /**
  * 분석된 음식을 끼니에 자동으로 담는다 (양 기본값 '전체', 6장 4번).
@@ -505,6 +571,7 @@ function startDraft(meal, isEdit) {
   document.getElementById('meal-save-label').textContent = isEdit ? '수정 완료' : '오늘 식사에 추가하기';
   document.getElementById('meal-delete').hidden = !isEdit;
   closeFoodEditor();
+  closeRecentPanel();
   resetPhotos(); // 이전 끼니의 분석 카드·미리보기 정리 (사진은 저장하지 않음)
   renderBasket();
   // 메인 입력은 사진 → 업로드 박스를 먼저 보여주고 직접 입력은 '+ 음식 추가'로 (6장)
@@ -546,6 +613,14 @@ function initRecordScreen(callbacks) {
   document.getElementById('food-cancel').addEventListener('click', () => {
     closeFoodEditor();
     renderBasket();
+  });
+  document.getElementById('add-recent').addEventListener('click', openRecentPanel);
+  document.getElementById('recent-close').addEventListener('click', closeRecentPanel);
+  document.getElementById('recent-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-recent]');
+    if (!btn) return;
+    const food = getRecentFoods()[Number(btn.dataset.recent)];
+    if (food) addRecentFood(food);
   });
   document.getElementById('add-food').addEventListener('click', () => {
     openFoodEditor();

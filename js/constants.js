@@ -119,6 +119,9 @@ const NEXT_MEAL_TIPS = {
   none: '지금처럼 골고루 챙겨 먹어요.',
 };
 
+// 최근 음식 다시 담기: 최근 30일 안에 자주 먹은 순(같으면 최근 순)으로 최대 10개
+const RECENT_FOODS = { limit: 10, days: 30 };
+
 // 먹은 양 배수 허용 범위 — 성분표가 100g당일 때 큰 용량(예: 1.5L 음료 = 15배)도 담을 수 있게 20배까지
 const MULTIPLIER_LIMITS = { min: 0.1, max: 20 };
 
