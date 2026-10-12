@@ -1,15 +1,15 @@
-// 시작점 — 화면 전환, 탭 내비게이션, 오늘 화면
+// 시작점 — 화면 전환(오늘 · 기록하기 · 내 정보), 오늘 화면
 
-// 화면은 섹션 hidden 토글로만 바꾼다 (라우터 없이 단순하게). 탭 강조도 여기서 함께
+// 화면은 섹션 hidden 토글로만 바꾼다 (라우터 없이 단순하게). 메뉴 강조도 여기서 함께
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach((el) => {
     el.hidden = el.id !== id;
   });
-  document.querySelectorAll('.tab').forEach((tab) => {
-    const active = `screen-${tab.dataset.nav}` === id;
-    tab.classList.toggle('active', active);
-    if (active) tab.setAttribute('aria-current', 'page');
-    else tab.removeAttribute('aria-current');
+  document.querySelectorAll('[data-nav]').forEach((btn) => {
+    const active = `screen-${btn.dataset.nav}` === id;
+    btn.classList.toggle('active', active);
+    if (active) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
   });
   window.scrollTo(0, 0);
 }
@@ -19,53 +19,47 @@ function currentScreen() {
   return el ? el.id : null;
 }
 
-// 끼니 줄에 보일 음식명: 3개까지는 모두, 넘으면 "a + b 외 n개"
-function mealNames(items) {
-  const names = items.map((it) => escapeHtml(it.name));
-  return names.length <= 3 ? names.join(' + ') : `${names.slice(0, 2).join(' + ')} 외 ${names.length - 2}개`;
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+
+// "2026년 10월 12일 (일)" — 날짜 이동(‹ ›)과 캘린더는 6단계
+function formatFullDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const day = WEEKDAYS[new Date(y, m - 1, d).getDay()];
+  return `${y}년 ${m}월 ${d}일 (${day})`;
 }
 
-// 끼니 아이콘: 사진은 저장하지 않으므로 첫 음식의 입력 방식 아이콘
-function mealIcon(items) {
-  const src = INPUT_SOURCES[items[0] && items[0].source] || INPUT_SOURCES.manual;
-  return iconSvg(src.icon);
+// 끼니 한 줄: [식사 종류 아이콘 + 점심 12:20] [음식1 kcal + 음식2 kcal] [⋯]
+// 사진은 저장하지 않으므로 음식마다 썸네일 대신 입력 방식 아이콘 (CLAUDE.md 8-1)
+function mealRowHtml(m) {
+  const type = MEAL_TYPES.find((t) => t.key === m.meal) || MEAL_TYPES[MEAL_TYPES.length - 1];
+  const foods = m.items
+    .map((it) => {
+      const src = INPUT_SOURCES[it.source] || INPUT_SOURCES.manual;
+      const amount = it.multiplier !== 1 ? ` <small>${amountLabel(it.multiplier)}</small>` : '';
+      return `<span class="food-chip"><span class="food-icon" title="${src.label}">${iconSvg(src.icon)}</span><span class="food-text"><span class="food-name">${escapeHtml(it.name)}${amount}</span><span class="food-kcal">${formatNumber(it.nutrients.calories)} kcal</span></span></span>`;
+    })
+    .join('<span class="food-plus">+</span>');
+  return `
+    <li class="meal-row" data-id="${m.id}">
+      <div class="meal-type">
+        <span class="meal-type-icon">${iconSvg(type.icon)}</span>
+        <span><strong>${type.label}</strong><small>${m.time}</small></span>
+      </div>
+      <div class="meal-foods">${foods}</div>
+      <div class="meal-more">
+        <button type="button" class="icon-btn more-btn" data-action="menu" aria-label="끼니 메뉴" aria-expanded="false">${iconSvg('more')}</button>
+        <div class="meal-menu" hidden>
+          <button type="button" data-action="edit">수정</button>
+          <button type="button" data-action="delete" class="danger">삭제</button>
+        </div>
+      </div>
+    </li>`;
 }
 
 function renderMealList(date) {
   const meals = getMealsByDate(date);
-  const allItems = meals.flatMap((m) => m.items);
-  document.getElementById('today-total').textContent = meals.length
-    ? `${formatNumber(sumItems(allItems).totals.calories)} kcal`
-    : '';
   document.getElementById('today-empty').hidden = meals.length > 0;
-
-  document.getElementById('meal-list').innerHTML = meals
-    .map((m) => {
-      const kcal = sumItems(m.items).totals.calories;
-      const detail = m.items
-        .map(
-          (it) => `<li><span>${escapeHtml(it.name)}${it.multiplier !== 1 ? ` <small>${amountLabel(it.multiplier)}</small>` : ''}</span><span>${formatNumber(it.nutrients.calories)} kcal</span></li>`
-        )
-        .join('');
-      return `
-      <li class="meal-row" data-id="${m.id}">
-        <div class="meal-line">
-          <button type="button" class="meal-main" data-action="toggle" aria-expanded="false">
-            <span class="meal-time">${m.time}</span>
-            <span class="meal-icon">${mealIcon(m.items)}</span>
-            <span class="meal-text"><span class="meal-tag">${mealLabel(m.meal)}</span><span class="meal-names">${mealNames(m.items)}</span></span>
-            <span class="meal-kcal">${formatNumber(kcal)} kcal</span>
-          </button>
-          <button type="button" class="icon-btn more-btn" data-action="menu" aria-label="끼니 메뉴" aria-expanded="false">${iconSvg('more')}</button>
-          <div class="meal-menu" hidden>
-            <button type="button" data-action="edit">끼니 수정</button>
-            <button type="button" data-action="delete" class="danger">끼니 삭제</button>
-          </div>
-        </div>
-        <ul class="meal-items" hidden>${detail}</ul>
-      </li>`;
-    })
-    .join('');
+  document.getElementById('meal-list').innerHTML = meals.map(mealRowHtml).join('');
 }
 
 function closeMealMenus(except) {
@@ -76,13 +70,15 @@ function closeMealMenus(except) {
   });
 }
 
-// 오늘 화면 (영양소 현황은 3단계에서 추가)
+// 오늘 화면 (영양 요약·균형 카드는 3단계에서 추가)
 function renderToday() {
   const profile = loadProfile();
-  if (!profile) return openSetup();
-  document.getElementById('tabbar').hidden = false;
+  if (!profile) return openMe();
+  document.body.classList.remove('first-run');
+  const today = toDateStr();
+  document.getElementById('today-date').textContent = formatFullDate(today);
   document.getElementById('today-calories').textContent = formatNumber(calcDailyCalories(profile));
-  renderMealList(toDateStr());
+  renderMealList(today);
   showScreen('screen-today');
 }
 
@@ -97,34 +93,28 @@ function showToast(message) {
   }, 2500);
 }
 
-function openSetup() {
-  fillSetupForm(loadProfile());
-  showScreen('screen-setup');
+function openMe() {
+  fillMeForm(loadProfile());
+  showScreen('screen-me');
 }
 
-// 탭 이동. 추가 화면에서 저장 안 한 내용이 있으면 먼저 확인
+// 메뉴 이동. 기록하기에서 저장 안 한 내용이 있으면 먼저 확인
 function navigate(target) {
   const from = currentScreen();
   if (from === `screen-${target}`) return;
-  if (from === 'screen-entry' && !confirmLeaveEntry()) return;
-  if (target === 'setup') openSetup();
-  else if (target === 'entry') openEntryForm();
+  if (from === 'screen-record' && !confirmLeaveRecord()) return;
+  if (target === 'me') openMe();
+  else if (target === 'record') openEntryForm();
   else renderToday();
 }
 
 function onMealListClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
-  const row = btn.closest('.meal-row');
-  const id = row.dataset.id;
+  const id = btn.closest('.meal-row').dataset.id;
   const action = btn.dataset.action;
-
-  if (action === 'toggle') {
-    const items = row.querySelector('.meal-items');
-    items.hidden = !items.hidden;
-    btn.setAttribute('aria-expanded', String(!items.hidden));
-  } else if (action === 'menu') {
-    const menu = row.querySelector('.meal-menu');
+  if (action === 'menu') {
+    const menu = btn.parentElement.querySelector('.meal-menu');
     closeMealMenus(menu);
     menu.hidden = !menu.hidden;
     btn.setAttribute('aria-expanded', String(!menu.hidden));
@@ -141,8 +131,11 @@ function onMealListClick(e) {
 
 document.addEventListener('DOMContentLoaded', () => {
   fillStaticIcons();
-  initSetupScreen(renderToday);
-  initEntryScreen({
+  initMeScreen((isFirst) => {
+    renderToday();
+    showToast(isFirst ? '반가워요! 이제 먹은 걸 기록해 보세요.' : '내 정보를 저장했어요.');
+  });
+  initRecordScreen({
     // 저장·삭제·뒤로 후 모두 오늘 화면으로 돌아온다
     onDone(message) {
       renderToday();
@@ -150,23 +143,25 @@ document.addEventListener('DOMContentLoaded', () => {
     },
   });
 
-  document.getElementById('tabbar').addEventListener('click', (e) => {
-    const tab = e.target.closest('[data-nav]');
-    if (tab) navigate(tab.dataset.nav);
+  // 사이드바(데스크톱)·하단 탭(모바일)·오른쪽 위 캐릭터 버튼 모두 data-nav로 이동
+  document.addEventListener('click', (e) => {
+    const nav = e.target.closest('[data-nav]');
+    if (nav) navigate(nav.dataset.nav);
   });
-  document.getElementById('cta-add').addEventListener('click', () => openEntryForm());
+  document.getElementById('add-meal').addEventListener('click', () => navigate('record'));
 
   // 목록 항목마다 리스너를 달지 않고 목록 하나에서 받는다 (다시 그려도 유지됨)
   document.getElementById('meal-list').addEventListener('click', onMealListClick);
   // 메뉴 밖을 누르면 열린 ⋯ 메뉴를 닫는다
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('.meal-line')) closeMealMenus();
+    if (!e.target.closest('.meal-more')) closeMealMenus();
   });
 
-  // 프로필이 없으면 첫 실행으로 보고 초기설정부터 (탭은 프로필 저장 후에 보임)
+  // 프로필이 없으면 첫 실행: 내 정보부터, 메뉴는 숨김 (CLAUDE.md 4장)
   if (loadProfile()) {
     renderToday();
   } else {
-    openSetup();
+    document.body.classList.add('first-run');
+    openMe();
   }
 });

@@ -39,13 +39,13 @@ const NUTRITION_STANDARDS = {
 
 // 식사 종류 — 저장은 key로, 화면엔 label로
 const MEAL_TYPES = [
-  { key: 'breakfast', label: '아침' },
-  { key: 'lunch', label: '점심' },
-  { key: 'dinner', label: '저녁' },
-  { key: 'snack', label: '간식' },
-  { key: 'late_night', label: '야식' },
-  { key: 'drink', label: '음료' },
-  { key: 'etc', label: '기타' },
+  { key: 'breakfast', label: '아침', icon: 'sunrise' },
+  { key: 'lunch', label: '점심', icon: 'sun' },
+  { key: 'dinner', label: '저녁', icon: 'sunset' },
+  { key: 'snack', label: '간식', icon: 'cookie' },
+  { key: 'late_night', label: '야식', icon: 'moon' },
+  { key: 'drink', label: '음료', icon: 'cup' },
+  { key: 'etc', label: '기타', icon: 'dish' },
 ];
 
 // 식사 시간대 (기기 현지 시각, 시 단위·끝 시각 포함). 간식·음료·기타는 시간대 없음
@@ -78,6 +78,18 @@ const INPUT_SOURCES = {
   manual: { label: '직접 입력', icon: 'pencil' },
   relog: { label: '최근 음식', icon: 'clock' },
 };
+
+// 영양소별 색 — 막대·타일 공통 (시안 ui-final.png와 같게, CLAUDE.md 8-1)
+const NUTRIENT_COLORS = {
+  carbs: '#5b8def', // 파랑
+  protein: '#f2994a', // 주황
+  fat: '#eb6b5e', // 빨강
+  sugars: '#a78bda', // 보라
+  sodium: '#8ea64f', // 초록
+};
+
+// 내 정보 '나의 영양 기준'·오늘 영양 요약 막대에 보이는 5개 (나머지는 펼쳐보기)
+const MAIN_NUTRIENTS = ['carbs', 'protein', 'fat', 'sugars', 'sodium'];
 
 // 먹은 양 배수 허용 범위
 const MULTIPLIER_LIMITS = { min: 0.1, max: 10 };

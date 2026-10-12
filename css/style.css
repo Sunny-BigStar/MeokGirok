@@ -1,7 +1,8 @@
-/* 색상은 캐릭터 시트·UI 시안에서 가져옴 (CLAUDE.md 8장, 8-1장) */
+/* 색상은 캐릭터 시트·최종 시안(ui-final.png)에서 가져옴 (CLAUDE.md 8장, 8-1장) */
 :root {
   --bg: #fbf5ee;
-  --card: #f9f2e5;
+  --card: #fffdf9;
+  --card-soft: #f9f2e5;
   --green: #8ea64f;
   --green-dark: #516c44;
   --green-soft: #eef3e0;
@@ -9,13 +10,14 @@
   --pink: #fee0d0;
   --text: #3d3a35;
   --muted: #8a8378;
-  --line: #e6dccb;
+  --line: #ece2d1;
   --radius: 20px;
-  --shadow: 0 4px 16px rgba(81, 108, 68, 0.1);
+  --shadow: 0 4px 18px rgba(81, 108, 68, 0.08);
   /* 글꼴은 아직 미정 → 이 두 변수만 바꾸면 전체가 바뀐다 (외부 폰트는 사용자가 줄 예정) */
   --font-title: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
   --tabbar-h: 68px;
+  --sidebar-w: 200px;
 }
 
 * {
@@ -36,23 +38,31 @@ body {
   display: none !important;
 }
 
-button {
+button,
+input,
+select {
   font-family: inherit;
 }
 
 h1,
-h2 {
+h2,
+h3 {
   font-family: var(--font-title);
   color: var(--green-dark);
 }
 
 h1 {
-  font-size: 1.5rem;
-  margin: 8px 0 4px;
+  font-size: 1.4rem;
+  margin: 4px 0 12px;
 }
 
 h2 {
   font-size: 1.05rem;
+  margin: 0 0 12px;
+}
+
+h3 {
+  font-size: 0.95rem;
   margin: 0;
 }
 
@@ -62,24 +72,7 @@ h2 {
   flex-shrink: 0;
 }
 
-/* ---------- 공통 틀: 로고 · 탭 ---------- */
-
-/* 모바일 세로 우선, 데스크톱에서는 가운데 좁은 폭으로 */
-.app,
-.app-header {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 16px;
-}
-
-.app {
-  padding-bottom: 24px;
-}
-
-.app-header {
-  padding-top: 16px;
-  padding-bottom: 4px;
-}
+/* ---------- 공통 틀: 로고 · 메뉴 ---------- */
 
 .logo {
   display: inline-flex;
@@ -96,13 +89,46 @@ h2 {
 }
 
 .logo-sub {
-  font-size: 0.65rem;
-  letter-spacing: 0.25em;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
   color: #9b8c7c;
 }
 
-/* 모바일: 하단 고정 탭 3개, 가운데 큰 초록 원형 + */
-.tabbar {
+.topbar {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 14px 16px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.avatar-btn {
+  display: none; /* 모바일은 하단 탭에 내 정보가 있으므로 숨김 */
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--pink);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.3) translateY(6%);
+}
+
+.sidebar-logo {
+  display: none;
+}
+
+/* 모바일: 하단 고정 탭 — 오늘 · 가운데 큰 초록 원형 기록하기(+) · 내 정보 */
+.sidebar {
   position: fixed;
   left: 0;
   right: 0;
@@ -113,12 +139,12 @@ h2 {
   display: flex;
   justify-content: space-around;
   align-items: center;
-  background: #fffdf9;
+  background: var(--card);
   border-top: 1px solid var(--line);
   box-shadow: 0 -4px 16px rgba(81, 108, 68, 0.08);
 }
 
-.tab {
+.nav-item {
   flex: 1;
   max-width: 160px;
   display: flex;
@@ -133,16 +159,12 @@ h2 {
   cursor: pointer;
 }
 
-.tab.active {
+.nav-item.active {
   color: var(--green-dark);
   font-weight: 700;
 }
 
-.tab-add {
-  flex: 0 0 auto;
-}
-
-.tab-add .icon {
+.nav-record .icon {
   width: 56px;
   height: 56px;
   padding: 14px;
@@ -154,98 +176,102 @@ h2 {
   box-shadow: 0 6px 14px rgba(142, 166, 79, 0.45);
 }
 
-.tab-add span {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
+/* 첫 실행(프로필 없음)엔 내 정보만 보여주므로 메뉴를 숨긴다 */
+body.first-run .sidebar,
+body.first-run .avatar-btn {
+  display: none !important;
 }
 
-/* 데스크톱: 상단 알약 탭 (하단 탭 대신), 순서 초기 설정 · 오늘 · 기록 추가 */
-@media (min-width: 768px) {
+body.first-run {
+  padding-bottom: 24px;
+}
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+}
+
+/* 데스크톱: 왼쪽 세로 사이드바 + 오른쪽 위 캐릭터 버튼 */
+@media (min-width: 900px) {
   body {
     padding-bottom: 32px;
   }
 
-  .app-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .tabbar {
-    position: static;
+  .sidebar {
+    top: 0;
+    right: auto;
+    width: var(--sidebar-w);
     height: auto;
-    width: max-content;
-    margin: 8px auto 12px;
-    padding: 6px;
-    gap: 4px;
-    border: 1.5px dashed var(--line);
-    border-radius: 999px;
+    padding: 24px 14px;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: 6px;
+    border-top: 0;
+    border-right: 1px solid var(--line);
     box-shadow: none;
-    background: #fffdf9;
   }
 
-  .tab,
-  .tab-add {
+  .sidebar-logo {
+    display: inline-flex;
+    margin: 0 10px 22px;
+  }
+
+  .nav-item {
     flex: 0 0 auto;
-    flex-direction: row;
-    gap: 6px;
     max-width: none;
-    padding: 8px 18px;
-    border-radius: 999px;
+    flex-direction: row;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
     font-size: 0.95rem;
   }
 
-  .tab[data-nav='today'] {
-    order: 2;
+  .nav-item.active {
+    background: var(--green-soft);
   }
 
-  .tab-add {
-    order: 3;
-  }
-
-  .tab-add .icon {
+  .nav-record .icon {
     width: 20px;
     height: 20px;
     padding: 0;
     margin: 0;
     background: none;
     color: currentColor;
-    box-shadow: none;
     stroke-width: 2;
+    box-shadow: none;
   }
 
-  .tab-add span {
-    position: static;
-    width: auto;
-    height: auto;
-    clip: auto;
+  .page {
+    margin-left: var(--sidebar-w);
   }
 
-  .tab.active {
-    background: var(--green-soft);
+  body.first-run .page {
+    margin-left: 0;
+  }
+
+  .topbar,
+  .app {
+    max-width: 960px;
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .topbar-logo {
+    visibility: hidden; /* 데스크톱은 사이드바에 로고가 있음 */
+  }
+
+  body.first-run .topbar-logo {
+    visibility: visible;
+  }
+
+  .avatar-btn {
+    display: block;
   }
 }
 
 /* ---------- 공통 요소 ---------- */
-
-.lead {
-  color: var(--muted);
-  margin: 0 0 16px;
-}
-
-/* hero.png 배경이 크림색 사각형이라 같은 배경 위에 둔다 */
-.hero {
-  text-align: center;
-}
-
-.hero img {
-  width: 180px;
-  max-width: 50%;
-  height: auto;
-}
 
 .card {
   background: var(--card);
@@ -258,9 +284,13 @@ h2 {
 .card-head {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.card-head h2 {
+  margin: 0;
 }
 
 .card-head-total {
@@ -269,9 +299,15 @@ h2 {
   white-space: nowrap;
 }
 
+.lead {
+  color: var(--muted);
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+}
+
 .field {
   border: 0;
-  margin: 0 0 16px;
+  margin: 0 0 14px;
   padding: 0;
   min-width: 0; /* fieldset 기본값(min-content) 때문에 좁은 화면에서 밖으로 넘치는 것 방지 */
 }
@@ -296,19 +332,21 @@ h2 {
   gap: 8px;
 }
 
-.input-unit input {
+.input-unit input,
+select {
   flex: 1;
   min-width: 0;
   width: 100%;
   font-size: 1rem;
-  font-family: inherit;
   padding: 10px 12px;
   border: 1.5px solid var(--line);
   border-radius: 12px;
   background: #fff;
+  color: var(--text);
 }
 
-.input-unit input:focus {
+.input-unit input:focus,
+select:focus {
   outline: none;
   border-color: var(--green);
 }
@@ -328,7 +366,7 @@ h2 {
 .note {
   font-size: 0.8rem;
   color: var(--muted);
-  margin: 4px 0 0;
+  margin: 6px 0 0;
 }
 
 .empty {
@@ -341,7 +379,7 @@ h2 {
   color: var(--muted);
 }
 
-/* 라디오를 버튼처럼: 성별·먹은 양·식사 종류 */
+/* 라디오를 버튼처럼 */
 .segmented {
   display: flex;
   gap: 8px;
@@ -353,7 +391,7 @@ h2 {
 }
 
 .segmented input,
-.choice input {
+.meal-options input {
   position: absolute;
   opacity: 0;
 }
@@ -361,95 +399,45 @@ h2 {
 .segmented span {
   display: block;
   text-align: center;
-  padding: 10px 4px;
+  padding: 9px 4px;
   border: 1.5px solid var(--line);
   border-radius: 12px;
   background: #fff;
   cursor: pointer;
 }
 
-.segmented input:checked + span,
-.choice input:checked + .choice-body {
+.segmented input:checked + span {
   border-color: var(--green);
-  background: var(--green-soft);
-  color: var(--green-dark);
+  background: var(--green);
+  color: #fff;
   font-weight: 600;
 }
 
 .segmented input:focus-visible + span,
-.choice input:focus-visible + .choice-body {
+.meal-options input:focus-visible + span {
   outline: 2px solid var(--green);
   outline-offset: 2px;
-}
-
-/* 식사 종류 7개는 줄바꿈 허용 */
-.segmented.wrap {
-  flex-wrap: wrap;
-}
-
-.segmented.wrap label {
-  flex: 1 0 22%;
-}
-
-/* 활동량: 세로 선택지 */
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.choice {
-  position: relative;
-}
-
-.choice-body {
-  display: flex;
-  flex-direction: column;
-  padding: 10px 14px;
-  border: 1.5px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.choice-body small {
-  color: var(--muted);
-}
-
-.result {
-  background: var(--pink);
-  border-radius: 14px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-
-.result p {
-  margin: 0;
-}
-
-#calorie-result strong,
-#today-calories {
-  color: var(--green-dark);
-  font-size: 1.3rem;
 }
 
 /* ---------- 버튼 ---------- */
 
 .btn-primary,
-.btn-secondary,
-.btn-danger {
-  display: block;
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: 999px;
   border: 0;
   cursor: pointer;
 }
 
 .btn-primary {
-  background: var(--green);
+  background: var(--green-dark);
   color: #fff;
 }
 
@@ -465,29 +453,40 @@ h2 {
   border: 1.5px solid var(--green);
 }
 
-.btn-danger {
-  margin-top: 8px;
-  background: transparent;
-  color: var(--brown);
-  border: 1.5px solid var(--brown);
+.btn-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--green-dark);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-/* 큰 초록 알약 버튼: + 음식 기록하기 */
-.btn-pill {
+.btn-small .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.btn-dashed {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  padding: 16px;
-  border: 0;
-  border-radius: 999px;
-  background: var(--green);
-  color: #fff;
-  font-size: 1.05rem;
-  font-weight: 700;
+  margin-top: 12px;
+  padding: 11px;
+  border: 1.5px dashed var(--green);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--green-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 14px rgba(142, 166, 79, 0.35);
 }
 
 .icon-btn {
@@ -496,6 +495,7 @@ h2 {
   justify-content: center;
   width: 36px;
   height: 36px;
+  flex-shrink: 0;
   border: 0;
   border-radius: 50%;
   background: transparent;
@@ -512,7 +512,7 @@ h2 {
   border: 0;
   color: var(--green-dark);
   font-size: 0.85rem;
-  padding: 4px 6px;
+  padding: 6px;
   cursor: pointer;
   text-decoration: underline;
 }
@@ -526,10 +526,15 @@ h2 {
   color: #fff;
   border-radius: 12px;
   padding: 10px 14px;
-  margin: 8px 0 12px;
+  margin: 0 0 12px;
 }
 
-/* ---------- 오늘의 식사 기록 ---------- */
+/* ---------- 오늘 ---------- */
+
+.date-title {
+  text-align: center;
+  font-size: 1.15rem;
+}
 
 .meal-list {
   list-style: none;
@@ -537,47 +542,72 @@ h2 {
   padding: 0;
 }
 
+/* 한 줄: [식사 종류 아이콘 + 점심 12:20] [음식1 kcal + 음식2 kcal] [⋯] */
 .meal-row {
-  border-bottom: 1px solid #ece2d1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 16px;
+  background: var(--card-soft);
 }
 
-.meal-row:last-child {
-  border-bottom: 0;
-}
-
-.meal-line {
-  position: relative;
+.meal-type {
   display: flex;
   align-items: center;
+  gap: 8px;
+  min-width: 76px;
 }
 
-/* 한 줄: 시간 · 아이콘 · 식사 종류 + 음식명 · kcal */
-.meal-main {
-  flex: 1;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
+.meal-type-icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
   align-items: center;
-  gap: 10px;
-  padding: 10px 0;
-  background: none;
-  border: 0;
-  text-align: left;
-  color: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
+  justify-content: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brown);
 }
 
-.meal-time {
-  font-size: 0.85rem;
+.meal-type-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.meal-type strong {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--green-dark);
+}
+
+.meal-type small {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 
-.meal-icon {
+.meal-foods {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.food-chip {
   display: inline-flex;
-  width: 34px;
-  height: 34px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.food-icon {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
@@ -585,27 +615,40 @@ h2 {
   color: var(--brown);
 }
 
-/* 좁은 화면에서 긴 음식명은 2줄까지만 (전체는 줄을 눌러 펼친 내역에서) */
-.meal-text {
+.food-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.food-text {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  line-height: 1.3;
+}
+
+.food-name {
+  font-size: 0.9rem;
   overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
 }
 
-.meal-tag {
-  font-size: 0.8rem;
+.food-name small,
+.basket-name small {
+  color: var(--muted);
+}
+
+.food-kcal {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.food-plus {
+  color: var(--muted);
   font-weight: 700;
-  color: var(--green-dark);
-  margin-right: 6px;
 }
 
-.meal-kcal {
-  font-weight: 600;
-  white-space: nowrap;
+.meal-more {
+  position: relative;
 }
 
 .meal-menu {
@@ -615,7 +658,7 @@ h2 {
   z-index: 5;
   display: flex;
   flex-direction: column;
-  min-width: 120px;
+  min-width: 96px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(61, 58, 53, 0.15);
@@ -625,7 +668,7 @@ h2 {
 .meal-menu button {
   background: none;
   border: 0;
-  padding: 12px 16px;
+  padding: 11px 16px;
   text-align: left;
   font-size: 0.95rem;
   color: var(--text);
@@ -640,38 +683,65 @@ h2 {
   color: var(--brown);
 }
 
-.meal-items {
-  list-style: none;
-  margin: 0 0 10px 0;
-  padding: 8px 12px;
-  background: #fffdf9;
-  border-radius: 12px;
-  font-size: 0.9rem;
-}
-
-.meal-items li {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 3px 0;
-}
-
-.meal-items small,
-.basket-name small {
-  color: var(--muted);
-}
-
-/* ---------- 추가 / 수정 화면 ---------- */
+/* ---------- 기록하기 ---------- */
 
 .screen-head {
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 4px 0 12px -8px;
+  margin: 0 0 8px -8px;
 }
 
 .screen-head h1 {
   margin: 0;
+}
+
+.meal-builder {
+  display: grid;
+  gap: 16px;
+}
+
+.meal-info {
+  background: var(--card-soft);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+/* 식사 종류 7개: 아이콘 + 글자 칩 */
+.meal-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.meal-options label {
+  position: relative;
+}
+
+.meal-options span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 2px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 0.82rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.meal-options .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.meal-options input:checked + span {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-weight: 700;
 }
 
 .two-col {
@@ -682,45 +752,189 @@ h2 {
 
 .two-col > label {
   font-weight: 600;
+  font-size: 0.9rem;
   color: var(--green-dark);
 }
 
 .two-col .input-unit {
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
-/* 입력 방식 탭 (4~6단계에서 늘어남) */
-.source-tabs {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-  overflow-x: auto;
+.two-col input {
+  padding: 8px 10px;
 }
 
-.source-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1.5px solid var(--line);
-  border-radius: 999px;
-  background: #fff;
+/* 식사 종류 옆 좁은 칸에서는 날짜·시간을 한 줄씩 (나란히 두면 "오후 12:20"이 잘림) */
+.meal-info .two-col {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.basket .card-head {
+  margin-bottom: 8px;
+}
+
+#basket-count {
+  font-size: 0.85rem;
   color: var(--muted);
-  font-size: 0.9rem;
-  white-space: nowrap;
+  font-weight: 400;
+}
+
+.basket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* 담긴 음식 한 줄: [아이콘] [이름·kcal] [전체|1/2|직접 입력] [✕] */
+.basket-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon name remove'
+    'amount amount amount'
+    'custom custom custom';
+  gap: 6px 10px;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.basket-item.editing {
+  border-color: var(--green);
+  background: var(--green-soft);
+}
+
+.basket-item.invalid {
+  border-color: var(--brown);
+}
+
+.basket-icon {
+  grid-area: icon;
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--pink);
+  color: var(--brown);
+}
+
+.basket-icon .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.basket-name {
+  grid-area: name;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  color: inherit;
   cursor: pointer;
 }
 
-.source-tab.active {
-  border-color: var(--green);
-  background: var(--green-soft);
-  color: var(--green-dark);
+.basket-name strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.basket-kcal {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.amount-group {
+  grid-area: amount;
+  display: flex;
+  gap: 4px;
+}
+
+.amount-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.amount-btn.on {
+  border-color: var(--green-dark);
+  background: var(--green-dark);
+  color: #fff;
   font-weight: 700;
 }
 
-.food-editor #food-cancel {
-  display: block;
-  margin: 6px auto 0;
+.remove-btn {
+  grid-area: remove;
+  width: 30px;
+  height: 30px;
+  color: var(--muted);
+}
+
+.custom-amount {
+  grid-area: custom;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.custom-amount input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.custom-amount input:focus {
+  outline: none;
+  border-color: var(--green);
+}
+
+.food-editor {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card-soft);
+}
+
+.editor-title {
+  margin: 0 0 10px;
+  font-weight: 700;
+  color: var(--green-dark);
+}
+
+.editor-title small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-actions .btn-secondary {
+  flex: 1;
+  padding: 11px;
 }
 
 /* 선택 영양성분: 2열, 아주 좁으면 1열 */
@@ -733,7 +947,7 @@ h2 {
 
 .mini-field > span:first-child {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--muted);
   margin-bottom: 2px;
 }
@@ -748,83 +962,135 @@ h2 {
   }
 }
 
-.multiplier-row {
-  margin-top: 8px;
+/* 저장 버튼: 모바일은 하단 탭 바로 위에 붙어 있게 */
+.save-bar {
+  position: sticky;
+  bottom: calc(var(--tabbar-h) + 8px + env(safe-area-inset-bottom));
+  z-index: 4;
+  padding: 8px 0 4px;
+  background: linear-gradient(to bottom, rgba(251, 245, 238, 0), var(--bg) 30%);
+  text-align: center;
 }
 
-.multiplier-row input:disabled {
-  background: #f1ece3;
-  color: var(--muted);
+.save-bar .hint:empty {
+  display: none;
 }
 
-.preview {
-  margin: 4px 0 0;
+.save-bar .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* 같은 끼니 확인 창 */
+.dialog {
+  width: min(360px, calc(100vw - 32px));
+  border: 0;
+  border-radius: var(--radius);
+  padding: 22px;
+  background: var(--card);
+  box-shadow: 0 12px 40px rgba(61, 58, 53, 0.25);
+}
+
+.dialog::backdrop {
+  background: rgba(61, 58, 53, 0.35);
+}
+
+.dialog p {
+  margin: 0 0 6px;
+  font-weight: 600;
   color: var(--green-dark);
-  font-weight: 600;
 }
 
-/* 담긴 음식 목록 */
-.basket-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.basket-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px 10px;
-  align-items: center;
-  padding: 8px 10px;
-  margin: 0 -10px;
-  border-radius: 12px;
-}
-
-.basket-item.editing {
-  background: var(--green-soft);
-}
-
-.basket-name {
-  overflow-wrap: anywhere;
-}
-
-.basket-kcal {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.basket-actions {
-  grid-column: 1 / -1;
-  text-align: right;
-}
-
-#basket-count {
-  font-size: 0.9rem;
-  color: var(--muted);
+.dialog .note {
   font-weight: 400;
+  margin-bottom: 16px;
 }
 
-/* 구석 캐릭터 + 말풍선 */
-.corner-buddy {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+.dialog-actions {
+  display: grid;
   gap: 8px;
-  margin-top: 16px;
 }
 
-.corner-buddy img {
-  width: 72px;
+.dialog-actions .btn-primary,
+.dialog-actions .btn-secondary {
+  padding: 12px;
+}
+
+@media (min-width: 900px) {
+  /* 데스크톱 기록하기: 왼쪽 식사 종류·시간 / 오른쪽 담긴 음식 */
+  .meal-builder {
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .basket-item {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'icon name amount remove'
+      'custom custom custom custom';
+  }
+
+  .amount-btn {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+  }
+
+  .save-bar {
+    position: static;
+    background: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .save-bar .btn-primary {
+    width: auto;
+    padding: 14px 32px;
+  }
+}
+
+/* ---------- 내 정보 ---------- */
+
+.me-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.me-head h1 {
+  margin-bottom: 4px;
+}
+
+.welcome {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--pink);
+  font-size: 0.9rem;
+}
+
+.me-buddy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* hero.png 배경이 크림색 사각형이라 같은 배경 위에 둔다 */
+.me-buddy img {
+  width: 96px;
   height: auto;
 }
 
 .bubble {
   position: relative;
-  margin: 0;
+  max-width: 150px;
+  margin: 0 0 6px;
   padding: 8px 12px;
   background: #fff;
   border-radius: 14px;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--green-dark);
   box-shadow: var(--shadow);
 }
@@ -832,10 +1098,91 @@ h2 {
 .bubble::after {
   content: '';
   position: absolute;
-  right: -6px;
-  top: 50%;
-  margin-top: -6px;
+  left: 50%;
+  bottom: -6px;
+  margin-left: -6px;
   border: 6px solid transparent;
-  border-right: 0;
-  border-left-color: #fff;
+  border-bottom: 0;
+  border-top-color: #fff;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.row-label {
+  padding-top: 10px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--green-dark);
+}
+
+.standards .std-label {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.std-kcal {
+  margin: 0 0 12px;
+  color: var(--green-dark);
+}
+
+.std-kcal strong {
+  font-size: 2rem;
+  color: var(--green);
+}
+
+.std-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.std-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.std-list li:last-child {
+  border-bottom: 0;
+}
+
+.std-list strong {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+#me-save {
+  margin-top: 4px;
+}
+
+@media (min-width: 900px) {
+  .me-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  #me-save {
+    width: auto;
+    margin-left: auto;
+    padding: 14px 32px;
+  }
 }

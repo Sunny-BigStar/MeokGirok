@@ -1,4 +1,4 @@
-// 초기설정 화면 — 프로필 입력, 권장 열량 계산, 저장
+// 내 정보 화면 — 기본 정보 입력, 권장 열량 계산, 나의 영양 기준 표시, 저장
 
 // Mifflin-St Jeor 기초대사량
 function calcBmr(p) {
@@ -12,12 +12,21 @@ function calcDailyCalories(p) {
   return Math.round(calcBmr(p) * level.factor);
 }
 
+// 단백질 목표범위 = 몸무게 × 0.8 ~ 1.2 g (5장)
+function proteinRange(weight) {
+  const { min, max } = NUTRITION_STANDARDS.proteinPerKg;
+  return { min: Math.round(weight * min), max: Math.round(weight * max) };
+}
+
 function formatNumber(n) {
   return n.toLocaleString('ko-KR');
 }
 
+const meForm = () => document.getElementById('me-form');
+
 // 폼 값을 읽어 프로필 객체로. 비어 있거나 범위 밖이면 errors에 담는다
-function readProfileForm(form) {
+function readProfileForm() {
+  const form = meForm();
   const data = new FormData(form);
   const profile = {
     age: Number(data.get('age')),
@@ -42,63 +51,70 @@ function readProfileForm(form) {
 }
 
 function renderActivityOptions() {
-  const box = document.getElementById('activity-options');
-  box.innerHTML = ACTIVITY_LEVELS.map(
-    (l) => `
-      <label class="choice">
-        <input type="radio" name="activity" value="${l.key}" />
-        <span class="choice-body">
-          <strong>${l.label}</strong>
-          <small>${l.desc}</small>
-        </span>
-      </label>`
-  ).join('');
+  const select = document.getElementById('activity');
+  select.innerHTML =
+    '<option value="">선택해 주세요</option>' +
+    ACTIVITY_LEVELS.map((l) => `<option value="${l.key}">${l.label} (${l.desc})</option>`).join('');
 }
 
-// 입력할 때마다 미리보기·안내문·저장 버튼 상태를 갱신
-function updateSetupPreview() {
-  const form = document.getElementById('setup-form');
-  const { profile, errors } = readProfileForm(form);
+// 나의 영양 기준 카드: 권장 열량 + 5개 기준 (값은 CLAUDE.md 5장 상수에서)
+function renderStandards(profile, valid) {
+  document.getElementById('me-calories').textContent = valid ? formatNumber(calcDailyCalories(profile)) : '–';
+  const rows = MAIN_NUTRIENTS.map((key) => {
+    const f = NUTRIENT_FIELDS.find((n) => n.key === key);
+    let value;
+    if (key === 'protein') {
+      const r = valid ? proteinRange(profile.weight) : null;
+      value = r ? `${r.min}~${r.max} ${f.unit}` : '–';
+    } else {
+      // 당류·나트륨 등은 '이하'로 지킬 기준이라 그렇게 표현
+      const limit = `${formatNumber(NUTRITION_STANDARDS[key])} ${f.unit}`;
+      value = key === 'carbs' ? limit : `${limit} 이하`;
+    }
+    return `<li><span class="dot" style="background:${NUTRIENT_COLORS[key]}"></span><span>${f.label}</span><strong>${value}</strong></li>`;
+  });
+  document.getElementById('me-standards').innerHTML = rows.join('');
+}
 
+// 입력할 때마다 기준 카드·안내문·저장 버튼 상태를 갱신
+function updateMePreview() {
+  const { profile, errors } = readProfileForm();
   for (const field of ['age', 'height', 'weight']) {
     document.getElementById(`hint-${field}`).textContent = errors[field] || '';
   }
-
   const valid = Object.keys(errors).length === 0;
-  const result = document.getElementById('calorie-result');
-  if (valid) {
-    result.innerHTML = `하루 권장 열량 약 <strong>${formatNumber(calcDailyCalories(profile))}</strong> kcal`;
-  } else {
-    result.textContent = '모두 입력하면 하루 권장 열량을 알려드려요.';
-  }
-  document.getElementById('setup-save').disabled = !valid;
+  renderStandards(profile, valid);
+  document.getElementById('me-save').disabled = !valid;
 }
 
-function fillSetupForm(profile) {
-  const form = document.getElementById('setup-form');
+function fillMeForm(profile) {
+  const form = meForm();
   form.reset();
   if (profile) {
     form.age.value = profile.age;
     form.height.value = profile.height;
     form.weight.value = profile.weight;
+    form.activity.value = profile.activity;
     const sex = form.querySelector(`input[name="sex"][value="${profile.sex}"]`);
     if (sex) sex.checked = true;
-    const act = form.querySelector(`input[name="activity"][value="${profile.activity}"]`);
-    if (act) act.checked = true;
   }
-  updateSetupPreview();
+  // 첫 실행이면 환영 문구와 '시작하기', 이후엔 그냥 '저장'
+  document.getElementById('me-save').textContent = profile ? '저장' : '저장하고 시작하기';
+  document.getElementById('me-welcome').hidden = Boolean(profile);
+  updateMePreview();
 }
 
-function initSetupScreen(onSaved) {
+function initMeScreen(onSaved) {
   renderActivityOptions();
-  const form = document.getElementById('setup-form');
-  form.addEventListener('input', updateSetupPreview);
-  form.addEventListener('change', updateSetupPreview);
+  const form = meForm();
+  form.addEventListener('input', updateMePreview);
+  form.addEventListener('change', updateMePreview);
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const { profile, errors } = readProfileForm(form);
+    const { profile, errors } = readProfileForm();
     if (Object.keys(errors).length > 0) return;
+    const isFirst = !loadProfile();
     saveProfile(profile);
-    onSaved(profile);
+    onSaved(isFirst);
   });
 }
