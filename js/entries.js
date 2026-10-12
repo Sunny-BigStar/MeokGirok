@@ -59,25 +59,74 @@ function mealLabel(key) {
   return m ? m.label : '기타';
 }
 
-function getEntriesByDate(date) {
+// "2026-10-12" → "10월 12일"
+function formatMonthDay(dateStr) {
+  const [, m, d] = dateStr.split('-').map(Number);
+  return `${m}월 ${d}일`;
+}
+
+// 먹은 양 배수를 사람 말로 (1배는 표시하지 않음)
+function amountLabel(multiplier) {
+  return multiplier === 0.5 ? '절반' : `${multiplier}배`;
+}
+
+// 사용자가 입력한 음식명을 innerHTML에 넣기 전에 이스케이프
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+
+// ---------- 끼니 단위 저장 (entries = 끼니 배열) ----------
+
+function getMealsByDate(date) {
   return loadEntries()
-    .filter((e) => e.date === date)
+    .filter((m) => m.date === date)
     .sort((a, b) => a.time.localeCompare(b.time));
 }
 
-function getEntry(id) {
-  return loadEntries().find((e) => e.id === id) || null;
+function getMeal(id) {
+  return loadEntries().find((m) => m.id === id) || null;
+}
+
+// 같은 날 같은 식사 종류 끼니 찾기 (지금 수정 중인 끼니는 제외)
+function findMealByType(date, mealKey, excludeId) {
+  return loadEntries().find((m) => m.date === date && m.meal === mealKey && m.id !== excludeId) || null;
 }
 
 // id가 이미 있으면 수정, 없으면 추가
-function upsertEntry(entry) {
-  const entries = loadEntries();
-  const i = entries.findIndex((e) => e.id === entry.id);
-  if (i >= 0) entries[i] = entry;
-  else entries.push(entry);
-  saveEntries(entries);
+function upsertMeal(meal) {
+  const meals = loadEntries();
+  const i = meals.findIndex((m) => m.id === meal.id);
+  if (i >= 0) meals[i] = meal;
+  else meals.push(meal);
+  saveEntries(meals);
 }
 
-function deleteEntry(id) {
-  saveEntries(loadEntries().filter((e) => e.id !== id));
+function deleteMeal(id) {
+  saveEntries(loadEntries().filter((m) => m.id !== id));
+}
+
+/**
+ * 음식들의 영양소 합계. 끼니 합계·하루 합계 모두 저장하지 않고 이 함수로 계산한다.
+ * null(모르는 값)은 더하지 않고, 하나라도 있으면 missing[key] = true로 알려준다.
+ * 아는 값이 하나도 없으면 합계도 null — 0으로 보이면 "안 먹었다"로 오해하므로
+ */
+function sumItems(items) {
+  const totals = {};
+  const missing = {};
+  for (const f of NUTRIENT_FIELDS) {
+    let sum = 0;
+    let known = 0;
+    missing[f.key] = false;
+    for (const item of items) {
+      const v = item.nutrients[f.key];
+      if (v === null || v === undefined) missing[f.key] = true;
+      else {
+        sum += v;
+        known++;
+      }
+    }
+    totals[f.key] = known ? roundTo(sum, f.decimals) : null;
+  }
+  return { totals, missing };
 }

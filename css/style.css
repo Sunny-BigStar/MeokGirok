@@ -1,15 +1,21 @@
-/* 색상은 캐릭터 시트에서 가져옴 (CLAUDE.md 8장) */
+/* 색상은 캐릭터 시트·UI 시안에서 가져옴 (CLAUDE.md 8장, 8-1장) */
 :root {
   --bg: #fbf5ee;
   --card: #f9f2e5;
   --green: #8ea64f;
   --green-dark: #516c44;
+  --green-soft: #eef3e0;
   --brown: #cc9669;
   --pink: #fee0d0;
   --text: #3d3a35;
   --muted: #8a8378;
-  --radius: 18px;
-  --shadow: 0 4px 14px rgba(81, 108, 68, 0.1);
+  --line: #e6dccb;
+  --radius: 20px;
+  --shadow: 0 4px 16px rgba(81, 108, 68, 0.1);
+  /* 글꼴은 아직 미정 → 이 두 변수만 바꾸면 전체가 바뀐다 (외부 폰트는 사용자가 줄 예정) */
+  --font-title: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --tabbar-h: 68px;
 }
 
 * {
@@ -20,26 +26,210 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: var(--font-body);
   line-height: 1.5;
-}
-
-/* 모바일 세로 우선, 데스크톱에서는 가운데 좁은 폭으로 */
-.app {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 20px 16px 40px;
+  /* 모바일 하단 고정 탭에 내용이 가리지 않게 */
+  padding-bottom: calc(var(--tabbar-h) + 16px + env(safe-area-inset-bottom));
 }
 
 [hidden] {
   display: none !important;
 }
 
-h1 {
+button {
+  font-family: inherit;
+}
+
+h1,
+h2 {
+  font-family: var(--font-title);
   color: var(--green-dark);
+}
+
+h1 {
   font-size: 1.5rem;
   margin: 8px 0 4px;
 }
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ---------- 공통 틀: 로고 · 탭 ---------- */
+
+/* 모바일 세로 우선, 데스크톱에서는 가운데 좁은 폭으로 */
+.app,
+.app-header {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.app {
+  padding-bottom: 24px;
+}
+
+.app-header {
+  padding-top: 16px;
+  padding-bottom: 4px;
+}
+
+.logo {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.logo-title {
+  font-family: var(--font-title);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: -0.02em;
+}
+
+.logo-sub {
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: #9b8c7c;
+}
+
+/* 모바일: 하단 고정 탭 3개, 가운데 큰 초록 원형 + */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: #fffdf9;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -4px 16px rgba(81, 108, 68, 0.08);
+}
+
+.tab {
+  flex: 1;
+  max-width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.tab.active {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.tab-add {
+  flex: 0 0 auto;
+}
+
+.tab-add .icon {
+  width: 56px;
+  height: 56px;
+  padding: 14px;
+  margin-top: -26px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  stroke-width: 2.6;
+  box-shadow: 0 6px 14px rgba(142, 166, 79, 0.45);
+}
+
+.tab-add span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+/* 데스크톱: 상단 알약 탭 (하단 탭 대신), 순서 초기 설정 · 오늘 · 기록 추가 */
+@media (min-width: 768px) {
+  body {
+    padding-bottom: 32px;
+  }
+
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .tabbar {
+    position: static;
+    height: auto;
+    width: max-content;
+    margin: 8px auto 12px;
+    padding: 6px;
+    gap: 4px;
+    border: 1.5px dashed var(--line);
+    border-radius: 999px;
+    box-shadow: none;
+    background: #fffdf9;
+  }
+
+  .tab,
+  .tab-add {
+    flex: 0 0 auto;
+    flex-direction: row;
+    gap: 6px;
+    max-width: none;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+  }
+
+  .tab[data-nav='today'] {
+    order: 2;
+  }
+
+  .tab-add {
+    order: 3;
+  }
+
+  .tab-add .icon {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
+    background: none;
+    color: currentColor;
+    box-shadow: none;
+    stroke-width: 2;
+  }
+
+  .tab-add span {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+  }
+
+  .tab.active {
+    background: var(--green-soft);
+  }
+}
+
+/* ---------- 공통 요소 ---------- */
 
 .lead {
   color: var(--muted);
@@ -65,6 +255,20 @@ h1 {
   margin-bottom: 16px;
 }
 
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.card-head-total {
+  font-weight: 700;
+  color: var(--green-dark);
+  white-space: nowrap;
+}
+
 .field {
   border: 0;
   margin: 0 0 16px;
@@ -73,12 +277,17 @@ h1 {
 }
 
 .field > label,
-.field > legend {
+.field > legend,
+.more-nutrients > summary {
   display: block;
   font-weight: 600;
   color: var(--green-dark);
   margin-bottom: 6px;
   padding: 0;
+}
+
+.more-nutrients > summary {
+  cursor: pointer;
 }
 
 .input-unit {
@@ -90,9 +299,11 @@ h1 {
 .input-unit input {
   flex: 1;
   min-width: 0;
+  width: 100%;
   font-size: 1rem;
+  font-family: inherit;
   padding: 10px 12px;
-  border: 1.5px solid #e6dccb;
+  border: 1.5px solid var(--line);
   border-radius: 12px;
   background: #fff;
 }
@@ -114,7 +325,23 @@ h1 {
   color: var(--brown);
 }
 
-/* 성별: 두 칸 토글 */
+.note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+.empty {
+  color: var(--muted);
+  margin: 0;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* 라디오를 버튼처럼: 성별·먹은 양·식사 종류 */
 .segmented {
   display: flex;
   gap: 8px;
@@ -122,6 +349,7 @@ h1 {
 
 .segmented label {
   flex: 1;
+  position: relative;
 }
 
 .segmented input,
@@ -133,8 +361,8 @@ h1 {
 .segmented span {
   display: block;
   text-align: center;
-  padding: 10px;
-  border: 1.5px solid #e6dccb;
+  padding: 10px 4px;
+  border: 1.5px solid var(--line);
   border-radius: 12px;
   background: #fff;
   cursor: pointer;
@@ -143,14 +371,24 @@ h1 {
 .segmented input:checked + span,
 .choice input:checked + .choice-body {
   border-color: var(--green);
-  background: #eef3e0;
+  background: var(--green-soft);
   color: var(--green-dark);
+  font-weight: 600;
 }
 
 .segmented input:focus-visible + span,
 .choice input:focus-visible + .choice-body {
   outline: 2px solid var(--green);
   outline-offset: 2px;
+}
+
+/* 식사 종류 7개는 줄바꿈 허용 */
+.segmented.wrap {
+  flex-wrap: wrap;
+}
+
+.segmented.wrap label {
+  flex: 1 0 22%;
 }
 
 /* 활동량: 세로 선택지 */
@@ -160,11 +398,15 @@ h1 {
   gap: 8px;
 }
 
+.choice {
+  position: relative;
+}
+
 .choice-body {
   display: flex;
   flex-direction: column;
   padding: 10px 14px;
-  border: 1.5px solid #e6dccb;
+  border: 1.5px solid var(--line);
   border-radius: 12px;
   background: #fff;
   cursor: pointer;
@@ -191,14 +433,11 @@ h1 {
   font-size: 1.3rem;
 }
 
-.note {
-  font-size: 0.8rem;
-  color: var(--muted);
-  margin: 4px 0 0;
-}
+/* ---------- 버튼 ---------- */
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-danger {
   display: block;
   width: 100%;
   font-size: 1rem;
@@ -214,84 +453,58 @@ h1 {
   color: #fff;
 }
 
-.btn-primary:disabled {
-  background: #c9d3b0;
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: transparent;
+  background: #fff;
   color: var(--green-dark);
   border: 1.5px solid var(--green);
 }
 
-/* ---------- 2단계: 오늘 목록 · 추가/수정 화면 ---------- */
-h2 {
-  color: var(--green-dark);
-  font-size: 1.1rem;
-  margin: 0 0 10px;
+.btn-danger {
+  margin-top: 8px;
+  background: transparent;
+  color: var(--brown);
+  border: 1.5px solid var(--brown);
 }
 
-.toast {
-  background: var(--green-dark);
-  color: #fff;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin: 0 0 12px;
-}
-
-.empty {
-  color: var(--muted);
-  margin: 0;
-}
-
-.entry-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-/* 한 줄: [식사·시간] [음식명] [kcal] / 아래 줄: 수정·삭제 */
-.entry-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 4px 10px;
+/* 큰 초록 알약 버튼: + 음식 기록하기 */
+.btn-pill {
+  display: flex;
   align-items: center;
-  padding: 10px 0;
-  border-bottom: 1px solid #ece2d1;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--green);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(142, 166, 79, 0.35);
 }
 
-.entry-item:last-child {
-  border-bottom: 0;
-}
-
-.entry-meta {
-  font-size: 0.85rem;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.meal-tag {
-  display: inline-block;
-  background: var(--pink);
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: var(--green-dark);
-  border-radius: 8px;
-  padding: 1px 8px;
-  margin-right: 6px;
+  cursor: pointer;
 }
 
-.entry-name {
-  overflow-wrap: anywhere;
-}
-
-.entry-kcal {
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.entry-actions {
-  grid-column: 1 / -1;
-  text-align: right;
+.icon-btn:hover {
+  background: var(--green-soft);
 }
 
 .link-btn {
@@ -308,26 +521,214 @@ h2 {
   color: var(--brown);
 }
 
-.cta-row {
-  margin-bottom: 12px;
+.toast {
+  background: var(--green-dark);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 8px 0 12px;
 }
 
-.optional {
-  font-weight: 400;
+/* ---------- 오늘의 식사 기록 ---------- */
+
+.meal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.meal-row {
+  border-bottom: 1px solid #ece2d1;
+}
+
+.meal-row:last-child {
+  border-bottom: 0;
+}
+
+.meal-line {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* 한 줄: 시간 · 아이콘 · 식사 종류 + 음식명 · kcal */
+.meal-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  background: none;
+  border: 0;
+  text-align: left;
+  color: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.meal-time {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.meal-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--pink);
+  color: var(--brown);
+}
+
+/* 좁은 화면에서 긴 음식명은 2줄까지만 (전체는 줄을 눌러 펼친 내역에서) */
+.meal-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.meal-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--green-dark);
+  margin-right: 6px;
+}
+
+.meal-kcal {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.meal-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(61, 58, 53, 0.15);
+  overflow: hidden;
+}
+
+.meal-menu button {
+  background: none;
+  border: 0;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.meal-menu button:hover {
+  background: var(--green-soft);
+}
+
+.meal-menu .danger {
+  color: var(--brown);
+}
+
+.meal-items {
+  list-style: none;
+  margin: 0 0 10px 0;
+  padding: 8px 12px;
+  background: #fffdf9;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.meal-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.meal-items small,
+.basket-name small {
   color: var(--muted);
 }
 
-.input-unit input[type='text'],
-.input-unit input[type='date'],
-.input-unit input[type='time'] {
-  width: 100%;
+/* ---------- 추가 / 수정 화면 ---------- */
+
+.screen-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 4px 0 12px -8px;
 }
 
-/* 선택 영양성분: 모바일 2열, 좁으면 1열 */
+.screen-head h1 {
+  margin: 0;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.two-col > label {
+  font-weight: 600;
+  color: var(--green-dark);
+}
+
+.two-col .input-unit {
+  margin-top: 6px;
+}
+
+/* 입력 방식 탭 (4~6단계에서 늘어남) */
+.source-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+}
+
+.source-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.source-tab.active {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.food-editor #food-cancel {
+  display: block;
+  margin: 6px auto 0;
+}
+
+/* 선택 영양성분: 2열, 아주 좁으면 1열 */
 .nutrient-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+  margin-top: 6px;
 }
 
 .mini-field > span:first-child {
@@ -338,7 +739,6 @@ h2 {
 }
 
 .mini-field input {
-  width: 100%;
   padding: 8px 10px;
 }
 
@@ -363,49 +763,79 @@ h2 {
   font-weight: 600;
 }
 
-/* 식사 종류 7개는 줄바꿈 허용 */
-.segmented.wrap {
-  flex-wrap: wrap;
+/* 담긴 음식 목록 */
+.basket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.segmented.wrap label {
-  flex: 1 0 22%;
-}
-
-.two-col {
+.basket-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: center;
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-radius: 12px;
 }
 
-.two-col > label {
+.basket-item.editing {
+  background: var(--green-soft);
+}
+
+.basket-name {
+  overflow-wrap: anywhere;
+}
+
+.basket-kcal {
   font-weight: 600;
-  color: var(--green-dark);
+  white-space: nowrap;
 }
 
-.two-col .input-unit {
-  margin-top: 6px;
+.basket-actions {
+  grid-column: 1 / -1;
+  text-align: right;
 }
 
-.form-actions {
+#basket-count {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* 구석 캐릭터 + 말풍선 */
+.corner-buddy {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 16px;
 }
 
-.form-actions button {
-  flex: 1;
+.corner-buddy img {
+  width: 72px;
+  height: auto;
 }
 
-.btn-danger {
-  display: block;
-  width: 100%;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 14px;
+.bubble {
+  position: relative;
+  margin: 0;
+  padding: 8px 12px;
+  background: #fff;
   border-radius: 14px;
-  background: transparent;
-  color: var(--brown);
-  border: 1.5px solid var(--brown);
-  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--green-dark);
+  box-shadow: var(--shadow);
+}
+
+.bubble::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  margin-top: -6px;
+  border: 6px solid transparent;
+  border-right: 0;
+  border-left-color: #fff;
 }

@@ -71,5 +71,13 @@ const NUTRIENT_FIELDS = [
   { key: 'sodium', label: '나트륨', unit: 'mg', decimals: 0 },
 ];
 
+// 입력 방식 — 저장은 key(source), 식사 기록 줄에는 아이콘으로 표시 (사진은 저장하지 않으므로 썸네일 대신)
+const INPUT_SOURCES = {
+  label: { label: '성분표', icon: 'label' },
+  photo: { label: '음식 사진', icon: 'camera' },
+  manual: { label: '직접 입력', icon: 'pencil' },
+  relog: { label: '최근 음식', icon: 'clock' },
+};
+
 // 먹은 양 배수 허용 범위
 const MULTIPLIER_LIMITS = { min: 0.1, max: 10 };

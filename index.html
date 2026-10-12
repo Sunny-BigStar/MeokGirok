@@ -7,8 +7,22 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
+  <header class="app-header">
+    <div class="logo">
+      <span class="logo-title">먹기록</span>
+      <span class="logo-sub">MEOKGIROK</span>
+    </div>
+  </header>
+
+  <!-- 탭 3개 = 화면 3개. 모바일은 하단 고정, 데스크톱은 상단 알약 탭 (CLAUDE.md 8-1) -->
+  <nav class="tabbar" id="tabbar" aria-label="화면 이동" hidden>
+    <button type="button" class="tab" data-nav="setup" data-icon="user"><span>초기 설정</span></button>
+    <button type="button" class="tab tab-add" data-nav="entry" data-icon="plus" aria-label="기록 추가"><span>기록 추가</span></button>
+    <button type="button" class="tab" data-nav="today" data-icon="home"><span>오늘</span></button>
+  </nav>
+
   <main class="app">
-    <!-- 화면 1: 초기설정 -->
+    <!-- 화면 1: 초기설정 (시안 적용은 3단계) -->
     <section id="screen-setup" class="screen" hidden>
       <div class="hero">
         <img src="assets/character/hero.png" alt="먹기록 캐릭터" />
@@ -68,7 +82,6 @@
 
     <!-- 화면 2: 오늘 (영양소 현황은 3단계에서 추가) -->
     <section id="screen-today" class="screen" hidden>
-      <h1>오늘</h1>
       <p id="toast" class="toast" role="status" hidden></p>
       <div class="card">
         <p>하루 권장 열량 약 <strong id="today-calories"></strong> kcal</p>
@@ -76,21 +89,45 @@
       </div>
 
       <div class="card">
-        <h2>오늘 먹은 것</h2>
-        <ul id="today-list" class="entry-list"></ul>
+        <div class="card-head">
+          <h2>오늘의 식사 기록</h2>
+          <span id="today-total" class="card-head-total"></span>
+        </div>
+        <ul id="meal-list" class="meal-list"></ul>
         <p id="today-empty" class="empty">아직 기록이 없어요. 먹은 걸 가볍게 남겨 보세요.</p>
       </div>
 
-      <div class="cta-row">
-        <button id="cta-manual" type="button" class="btn-primary">직접 입력</button>
-      </div>
-      <button id="open-setup" type="button" class="btn-secondary">설정 다시 열기</button>
+      <button id="cta-add" type="button" class="btn-pill" data-icon="plus"><span>음식 기록하기</span></button>
     </section>
 
-    <!-- 화면 3: 추가 / 수정 -->
+    <!-- 화면 3: 추가 / 수정 — 끼니 정보 → 음식 담기 → 끼니 저장 -->
     <section id="screen-entry" class="screen" hidden>
-      <h1 id="entry-title">기록 추가</h1>
-      <form id="entry-form" class="card" novalidate>
+      <div class="screen-head">
+        <button id="entry-back" type="button" class="icon-btn" data-icon="back" aria-label="뒤로"></button>
+        <h1 id="entry-title">기록 추가</h1>
+      </div>
+
+      <div class="card">
+        <fieldset class="field">
+          <legend>식사 종류</legend>
+          <div id="meal-options" class="segmented wrap"></div>
+        </fieldset>
+        <div class="two-col">
+          <label>날짜
+            <span class="input-unit"><input id="meal-date" type="date" /></span>
+          </label>
+          <label>시간
+            <span class="input-unit"><input id="meal-time" type="time" /></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 입력 방식 탭: 지금은 직접 입력만, 4~6단계에서 성분표·음식 사진·최근 음식 추가 -->
+      <div class="source-tabs" role="tablist">
+        <button type="button" class="source-tab active" role="tab" aria-selected="true" data-icon="pencil"><span>직접 입력</span></button>
+      </div>
+
+      <form id="food-form" class="card food-editor" novalidate>
         <div class="field">
           <label for="foodName">음식명</label>
           <div class="input-unit">
@@ -106,10 +143,10 @@
           </div>
         </div>
 
-        <fieldset class="field">
-          <legend>나머지 영양성분 <small class="optional">(선택 · 모르면 비워 두세요)</small></legend>
+        <details class="field more-nutrients">
+          <summary>나머지 영양성분 <small class="optional">(선택 · 모르면 비워 두세요)</small></summary>
           <div id="nutrient-inputs" class="nutrient-grid"></div>
-        </fieldset>
+        </details>
 
         <fieldset class="field">
           <legend>먹은 양</legend>
@@ -123,33 +160,37 @@
             <span>배</span>
           </div>
           <p class="hint" id="hint-multiplier"></p>
-          <p class="preview" id="entry-preview"></p>
+          <p class="preview" id="food-preview"></p>
         </fieldset>
 
-        <fieldset class="field">
-          <legend>식사 종류</legend>
-          <div id="meal-options" class="segmented wrap"></div>
-        </fieldset>
-
-        <div class="field two-col">
-          <label>날짜
-            <span class="input-unit"><input name="date" type="date" /></span>
-          </label>
-          <label>시간
-            <span class="input-unit"><input name="time" type="time" /></span>
-          </label>
-        </div>
-
-        <button id="entry-save" type="submit" class="btn-primary" disabled>저장</button>
-        <div class="form-actions">
-          <button id="entry-cancel" type="button" class="btn-secondary">취소</button>
-          <button id="entry-delete" type="button" class="btn-danger" hidden>삭제</button>
-        </div>
+        <button id="food-submit" type="submit" class="btn-secondary" disabled>이 끼니에 담기</button>
+        <button id="food-cancel" type="button" class="link-btn" hidden>고치기 취소</button>
       </form>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>담긴 음식 <span id="basket-count"></span></h2>
+          <span id="basket-total" class="card-head-total"></span>
+        </div>
+        <ul id="basket-list" class="basket-list"></ul>
+        <p id="basket-empty" class="empty">아직 담긴 음식이 없어요.</p>
+        <p id="basket-summary" class="note"></p>
+      </div>
+
+      <p class="hint" id="hint-meal-save"></p>
+      <button id="meal-save" type="button" class="btn-primary" disabled>끼니 저장</button>
+      <button id="meal-delete" type="button" class="btn-danger" hidden>끼니 삭제</button>
+
+      <!-- 캐릭터 반응은 8단계. 지금은 기본 표정 + 고정 문구 -->
+      <div class="corner-buddy">
+        <p class="bubble">맛있는 한 끼를 기록해요!</p>
+        <img src="assets/character/expr-default.png" alt="" />
+      </div>
     </section>
   </main>
 
   <script src="js/constants.js"></script>
+  <script src="js/icons.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/entries.js"></script>
