@@ -36,3 +36,40 @@ const NUTRITION_STANDARDS = {
   proteinPerKg: { min: 0.8, max: 1.2 }, // 단백질 목표범위 = 몸무게 × 배수
   source: '식품 등의 표시·광고에 관한 법률 시행규칙 [별표 5] 1일 영양성분 기준치',
 };
+
+// 식사 종류 — 저장은 key로, 화면엔 label로
+const MEAL_TYPES = [
+  { key: 'breakfast', label: '아침' },
+  { key: 'lunch', label: '점심' },
+  { key: 'dinner', label: '저녁' },
+  { key: 'snack', label: '간식' },
+  { key: 'late_night', label: '야식' },
+  { key: 'drink', label: '음료' },
+  { key: 'etc', label: '기타' },
+];
+
+// 식사 시간대 (기기 현지 시각, 시 단위·끝 시각 포함). 간식·음료·기타는 시간대 없음
+// 야식은 자정을 넘기므로 start > end
+const MEAL_TIME_SLOTS = {
+  breakfast: { start: 5, end: 10 },
+  lunch: { start: 11, end: 15 },
+  dinner: { start: 16, end: 20 },
+  late_night: { start: 21, end: 4 },
+};
+
+// 영양소 9개 — 입력 폼·환산·표시가 모두 이 목록을 따른다
+// decimals: 저장 시 반올림 자릿수 (kcal·mg은 정수, g은 소수 첫째 자리)
+const NUTRIENT_FIELDS = [
+  { key: 'calories', label: '열량', unit: 'kcal', decimals: 0 },
+  { key: 'carbs', label: '탄수화물', unit: 'g', decimals: 1 },
+  { key: 'sugars', label: '당류', unit: 'g', decimals: 1 },
+  { key: 'protein', label: '단백질', unit: 'g', decimals: 1 },
+  { key: 'fat', label: '지방', unit: 'g', decimals: 1 },
+  { key: 'sat_fat', label: '포화지방', unit: 'g', decimals: 1 },
+  { key: 'trans_fat', label: '트랜스지방', unit: 'g', decimals: 1 },
+  { key: 'cholesterol', label: '콜레스테롤', unit: 'mg', decimals: 0 },
+  { key: 'sodium', label: '나트륨', unit: 'mg', decimals: 0 },
+];
+
+// 먹은 양 배수 허용 범위
+const MULTIPLIER_LIMITS = { min: 0.1, max: 10 };

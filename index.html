@@ -66,20 +66,94 @@
       </form>
     </section>
 
-    <!-- 화면 2: 오늘 (1단계 자리표시자) -->
+    <!-- 화면 2: 오늘 (영양소 현황은 3단계에서 추가) -->
     <section id="screen-today" class="screen" hidden>
       <h1>오늘</h1>
+      <p id="toast" class="toast" role="status" hidden></p>
       <div class="card">
         <p>하루 권장 열량 약 <strong id="today-calories"></strong> kcal</p>
         <p class="note">참고용 · 일반적인 계산식 기준이에요.</p>
       </div>
+
+      <div class="card">
+        <h2>오늘 먹은 것</h2>
+        <ul id="today-list" class="entry-list"></ul>
+        <p id="today-empty" class="empty">아직 기록이 없어요. 먹은 걸 가볍게 남겨 보세요.</p>
+      </div>
+
+      <div class="cta-row">
+        <button id="cta-manual" type="button" class="btn-primary">직접 입력</button>
+      </div>
       <button id="open-setup" type="button" class="btn-secondary">설정 다시 열기</button>
+    </section>
+
+    <!-- 화면 3: 추가 / 수정 -->
+    <section id="screen-entry" class="screen" hidden>
+      <h1 id="entry-title">기록 추가</h1>
+      <form id="entry-form" class="card" novalidate>
+        <div class="field">
+          <label for="foodName">음식명</label>
+          <div class="input-unit">
+            <input id="foodName" name="foodName" type="text" maxlength="40" placeholder="예: 신라면" autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="n-calories">열량</label>
+          <div class="input-unit">
+            <input id="n-calories" name="n-calories" type="number" inputmode="decimal" min="0" step="any" />
+            <span>kcal</span>
+          </div>
+        </div>
+
+        <fieldset class="field">
+          <legend>나머지 영양성분 <small class="optional">(선택 · 모르면 비워 두세요)</small></legend>
+          <div id="nutrient-inputs" class="nutrient-grid"></div>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>먹은 양</legend>
+          <div class="segmented">
+            <label><input type="radio" name="amount" value="1" /><span>전체</span></label>
+            <label><input type="radio" name="amount" value="0.5" /><span>절반</span></label>
+            <label><input type="radio" name="amount" value="custom" /><span>직접</span></label>
+          </div>
+          <div class="input-unit multiplier-row">
+            <input name="multiplier" type="number" inputmode="decimal" min="0.1" max="10" step="any" placeholder="예: 1.5" aria-label="배수" />
+            <span>배</span>
+          </div>
+          <p class="hint" id="hint-multiplier"></p>
+          <p class="preview" id="entry-preview"></p>
+        </fieldset>
+
+        <fieldset class="field">
+          <legend>식사 종류</legend>
+          <div id="meal-options" class="segmented wrap"></div>
+        </fieldset>
+
+        <div class="field two-col">
+          <label>날짜
+            <span class="input-unit"><input name="date" type="date" /></span>
+          </label>
+          <label>시간
+            <span class="input-unit"><input name="time" type="time" /></span>
+          </label>
+        </div>
+
+        <button id="entry-save" type="submit" class="btn-primary" disabled>저장</button>
+        <div class="form-actions">
+          <button id="entry-cancel" type="button" class="btn-secondary">취소</button>
+          <button id="entry-delete" type="button" class="btn-danger" hidden>삭제</button>
+        </div>
+      </form>
     </section>
   </main>
 
   <script src="js/constants.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/profile.js"></script>
+  <script src="js/entries.js"></script>
+  <script src="js/entry-form.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

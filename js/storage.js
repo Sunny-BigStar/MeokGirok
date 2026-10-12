@@ -13,3 +13,17 @@ function loadProfile() {
 function saveProfile(profile) {
   localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile));
 }
+
+function loadEntries() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.entries);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveEntries(entries) {
+  localStorage.setItem(STORAGE_KEYS.entries, JSON.stringify(entries));
+}

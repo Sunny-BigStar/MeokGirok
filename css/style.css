@@ -69,6 +69,7 @@ h1 {
   border: 0;
   margin: 0 0 16px;
   padding: 0;
+  min-width: 0; /* fieldset 기본값(min-content) 때문에 좁은 화면에서 밖으로 넘치는 것 방지 */
 }
 
 .field > label,
@@ -222,4 +223,189 @@ h1 {
   background: transparent;
   color: var(--green-dark);
   border: 1.5px solid var(--green);
+}
+
+/* ---------- 2단계: 오늘 목록 · 추가/수정 화면 ---------- */
+h2 {
+  color: var(--green-dark);
+  font-size: 1.1rem;
+  margin: 0 0 10px;
+}
+
+.toast {
+  background: var(--green-dark);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+}
+
+.empty {
+  color: var(--muted);
+  margin: 0;
+}
+
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* 한 줄: [식사·시간] [음식명] [kcal] / 아래 줄: 수정·삭제 */
+.entry-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #ece2d1;
+}
+
+.entry-item:last-child {
+  border-bottom: 0;
+}
+
+.entry-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.meal-tag {
+  display: inline-block;
+  background: var(--pink);
+  color: var(--green-dark);
+  border-radius: 8px;
+  padding: 1px 8px;
+  margin-right: 6px;
+}
+
+.entry-name {
+  overflow-wrap: anywhere;
+}
+
+.entry-kcal {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.entry-actions {
+  grid-column: 1 / -1;
+  text-align: right;
+}
+
+.link-btn {
+  background: none;
+  border: 0;
+  color: var(--green-dark);
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.link-btn.danger {
+  color: var(--brown);
+}
+
+.cta-row {
+  margin-bottom: 12px;
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.input-unit input[type='text'],
+.input-unit input[type='date'],
+.input-unit input[type='time'] {
+  width: 100%;
+}
+
+/* 선택 영양성분: 모바일 2열, 좁으면 1열 */
+.nutrient-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.mini-field > span:first-child {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.mini-field input {
+  width: 100%;
+  padding: 8px 10px;
+}
+
+@media (max-width: 340px) {
+  .nutrient-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.multiplier-row {
+  margin-top: 8px;
+}
+
+.multiplier-row input:disabled {
+  background: #f1ece3;
+  color: var(--muted);
+}
+
+.preview {
+  margin: 4px 0 0;
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+/* 식사 종류 7개는 줄바꿈 허용 */
+.segmented.wrap {
+  flex-wrap: wrap;
+}
+
+.segmented.wrap label {
+  flex: 1 0 22%;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.two-col > label {
+  font-weight: 600;
+  color: var(--green-dark);
+}
+
+.two-col .input-unit {
+  margin-top: 6px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.form-actions button {
+  flex: 1;
+}
+
+.btn-danger {
+  display: block;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--brown);
+  border: 1.5px solid var(--brown);
+  cursor: pointer;
 }
